@@ -6,46 +6,30 @@ package config
 import (
 	"strings"
 	"strconv"
+	"bufio"
+	"path"
+	"os"
+	"io"
 )
 
-// 解析配置文件接口
-type ConfigInter interface {
-	ParseFile(config string) error
-	GetString(section, key string, def ...string) string
-	GetBool(section, key string, def ...bool) bool
-	GetInt(section, key string, def ...int) int
-	GetInt32(section, key string, def ...int32) int32
-	GetInt64(section, key string, def ...int64) int64
-	GetFloat64(section, key string, def ...float64) float64
-	SetValue(section, key, value string)
-	GetSec(section string) (map[string]string, bool)
-	GetSecs() []string
-}
+const (
+	Line_Char = '\\'
+	Line_Str  = "\\"
+	Inc_Str   = "include "
+)
 
 // GetConfig 获取配置对象
 //   请求
 //     cfgFile: 配置文件
-//     cfgType: 配置文件类型，取值范围: json-json文件 ini-ini文件，默认为ini
 //   返回
 //     配置对象、错误信息
-func GetConfig(cfgFile, cfgType string) (ConfigInter, error) {
-	var oConfig ConfigInter
-	if cfgType == "json" {
-		oConfig = NewStIni() // todo 添加json
-	} else {
-		oConfig = NewStIni()
+func NewConfig(cfgFile string) (*StConfig, error) {
+	oConfig := &StConfig{
+		filePath: cfgFile,
+		configList: make(map[string]map[string]string),
 	}
-
 	err := oConfig.ParseFile(cfgFile)
 	return oConfig, err
-}
-
-
-// 解析配置文件基类
-type StConfig struct {
-	filePath    string                       // 配置文件路径
-	includeFile []string                     // 包含的文件
-	configList  map[string]map[string]string // 配置文件内容
 }
 
 // ParseFile 解析配置文件
@@ -54,7 +38,113 @@ type StConfig struct {
 //   返回
 //     错误信息
 func (c *StConfig) ParseFile(cfgFile string) error {
+	c.filePath = cfgFile
+	c.configList = make(map[string]map[string]string)
+
+	err := c.parseOne(c.filePath)
+	if err != nil {
+		return err
+	}
+
+	// 包含配置文件的处理
+	for _, file := range c.includeFile {
+		if path.IsAbs(file) {
+			err = c.parseOne(file)
+			if err != nil {
+				return err
+			}
+		}
+
+		p, _ := path.Split(c.filePath)
+		f := path.Join(p, file)
+		err = c.parseOne(f)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+// parseOne 读取一个配置文件
+//   参数
+//     filePath: 配置文件路径
+//   返回
+//     成功返回nil，失败返回错误信息
+func (c *StConfig) parseOne(filePath string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+	var section string
+	buf := bufio.NewReader(file)
+	var realLine string
+
+	for {
+		l, err := buf.ReadString('\n')
+		line := strings.TrimSpace(l)
+		n := len(line)
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+
+			if n == 0 {
+				break
+			}
+		}
+
+		// 处理换行
+		if n > 0 && line[n-1] == Line_Char {
+			realLine += strings.TrimSpace(strings.TrimRight(line, Line_Str))
+			continue
+		} else if len(realLine) > 0 {
+			realLine += strings.TrimSpace(line)
+		} else {
+			realLine = line
+		}
+
+		n = len(realLine)
+		switch {
+		case n == 0:
+		case string(realLine[0]) == "#": // 配置文件备注
+			realLine = ""
+		case realLine[0] == '[' && realLine[len(realLine)-1] == ']':
+			section = strings.ToUpper(strings.TrimSpace(realLine[1 : len(realLine)-1]))
+			c.configList[section] = make(map[string]string)
+			realLine = ""
+		case n > 8 && realLine[0:8] == Inc_Str: // 包含文件
+			f := realLine[8:]
+			c.includeFile = append(c.includeFile, f)
+			realLine = ""
+
+		default:
+			tmpLine := realLine
+			if i := strings.IndexAny(realLine, "#"); i > 0 {
+				// 存在备注
+				tmpLine = realLine[0:i]
+			}
+			realLine = ""
+			i := strings.IndexAny(tmpLine, "=")
+			if i < 1 {
+				continue
+			}
+			key := strings.ToUpper(strings.TrimSpace(tmpLine[0:i]))
+			value := strings.TrimSpace(tmpLine[i+1 : len(tmpLine)])
+			c.configList[section][key] = value
+		}
+	}
+
+	return nil
+}
+
+// 解析配置文件基类
+type StConfig struct {
+	filePath    string                       // 配置文件路径
+	includeFile []string                     // 包含的文件
+	configList  map[string]map[string]string // 配置文件内容
 }
 
 // getValue 根据key值获取对应的value值

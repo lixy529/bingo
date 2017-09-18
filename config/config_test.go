@@ -8,7 +8,7 @@ import "testing"
 // TestIniConfig 测试ini配置
 func TestIniConfig(t *testing.T) {
 	cfgFile := "./cfg/app.ini"
-	obj, err := GetConfig(cfgFile, "ini")
+	obj, err := NewConfig(cfgFile)
 	if err != nil {
 		t.Errorf("GetConfig Err, err: %s", err.Error())
 		return
