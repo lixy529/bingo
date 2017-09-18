@@ -1,7 +1,8 @@
 bingo
 ======
 
-一个golang的web开发框架，以学习为目的，大家可以一起学习。
+一个golang的web开发框架，以学习为目的，仅供大家学习。
+
 框架的使用可以参考demo代码
 
 main函数调用goweb.ObjApp.Run(*appCfg)启动服务
