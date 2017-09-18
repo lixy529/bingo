@@ -1,0 +1,8 @@
+{
+  "name": "Nick",
+  "addr": "Beijing, China",
+  "err":  {
+    "1001": "err1",
+    "1002": "err2"
+  }
+}

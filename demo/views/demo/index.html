@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+{{template "header" .}}
+<body>
+<div>用户名：{{.Info.Name}}</div>
+<div>邮箱：{{.Info.Email}}</div>
+<div>手机：{{.Info.Phone}}</div>
+<div>地址：{{lang "zh-cn" "addr"}}</div>
+<div>html2str: {{html2str "<html>test</html>"}}</div>
+<div>htmlquote: {{htmlquote "<br>"}}</div>
+<div>htmlunquote: {{htmlunquote "&lt;br&gt;"}}</div>
+<div>substr: {{substr "123456" 1 3}}</div>
+<div>trim: {{trim "00aaa00" "0"}}</div>
+<div>trimleft: {{trimleft "00aaa00" "0"}}</div>
+<div>trimright: {{trimright "00aaa00" "0"}}</div>
+<div>sum: {{sum 1 2 3 4}}</div>
+{{template "footer" .}}
+</body>
+</html>
