@@ -4,14 +4,13 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"legitlab.letv.cn/uc_tp/goweb"
-	_ "legitlab.letv.cn/uc_tp/goweb/cache/memcache"
-	_ "legitlab.letv.cn/uc_tp/goweb/cache/redis"
-	"legitlab.letv.cn/uc_tp/goweb/demo/models"
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo"
+	_ "github.com/bingo/cache/memcache"
+	_ "github.com/bingo/cache/redis"
+	"github.com/bingo/demo/models"
+	"github.com/bingo/utils"
 	"log"
 	"os"
 	"strconv"
@@ -237,7 +236,7 @@ func (c *DemoController) UploadAction() {
 		return
 	}
 
-	for i, _ := range files {
+	for i := range files {
 		file, err := files[i].Open()
 		defer file.Close()
 		if err != nil {
@@ -274,23 +273,6 @@ func (c *DemoController) CacheAction() {
 	}
 
 	c.WriteString(val)
-}
-
-// mongoTestAction Mongo 测试
-func (c *DemoController) MongoAction() {
-	mongoName := c.GetString("name", "")
-	if mongoName == "" {
-		c.WriteString("Please input name")
-		return
-	}
-	m := &models.DemoModel{}
-	val, err := m.MongoTest(mongoName)
-	if err != nil {
-		c.WriteString("Mongo error," + err.Error() + "<br />")
-		return
-	}
-	ret, _ := json.Marshal(val)
-	c.WriteString(string(ret))
 }
 
 // dbTestAction db测试
@@ -353,17 +335,17 @@ func (c *DemoController) SrvTestAction() {
 
 // LogTestAction 日志测试
 func (c *DemoController) LogTestAction() {
-	goweb.Glogger.Debug("<182>" + "sso" + "[10001]:" + "usrlog|" + "LevelDebug")
-	goweb.Glogger.Info("<182>" + "sso" + "[10002]:" + "usrlog|" + "LevelInfo")
-	goweb.Glogger.Warn("<182>" + "sso" + "[10003]:" + "usrlog|" + "LevelWarn")
-	goweb.Glogger.Error("<182>" + "sso" + "[10004]:" + "usrlog|" + "LevelError")
-	goweb.Glogger.Fatal("<182>" + "sso" + "[10005]:" + "usrlog|" + "LevelFatal")
+	bingo.Glogger.Debug("<182>" + "sso" + "[10001]:" + "usrlog|" + "LevelDebug")
+	bingo.Glogger.Info("<182>" + "sso" + "[10002]:" + "usrlog|" + "LevelInfo")
+	bingo.Glogger.Warn("<182>" + "sso" + "[10003]:" + "usrlog|" + "LevelWarn")
+	bingo.Glogger.Error("<182>" + "sso" + "[10004]:" + "usrlog|" + "LevelError")
+	bingo.Glogger.Fatal("<182>" + "sso" + "[10005]:" + "usrlog|" + "LevelFatal")
 
-	goweb.Glogger.Debugf("<182>sso[%d]:%s|%s\t[%s]\t%s", 20001, "usrlog", utils.CurTime(), "DEBUG", "LevelDebug")
-	goweb.Glogger.Infof("<182>sso[%d]:%s|%s\t[%s]\t%s", 20002, "usrlog", utils.CurTime(), "INFO", "LevelInfo")
-	goweb.Glogger.Warnf("<182>sso[%d]:%s|%s\t[%s]\t%s", 20003, "usrlog", utils.CurTime(), "WARN", "LevelWarn")
-	goweb.Glogger.Errorf("<182>sso[%d]:%s|%s\t[%s]\t%s", 20004, "usrlog", utils.CurTime(), "ERROR", "LevelError")
-	goweb.Glogger.Fatalf("<182>sso[%d]:%s|%s\t[%s]\t%s", 20005, "usrlog", utils.CurTime(), "FATAL", "LevelFatal")
+	bingo.Glogger.Debugf("<182>sso[%d]:%s|%s\t[%s]\t%s", 20001, "usrlog", utils.CurTime(), "DEBUG", "LevelDebug")
+	bingo.Glogger.Infof("<182>sso[%d]:%s|%s\t[%s]\t%s", 20002, "usrlog", utils.CurTime(), "INFO", "LevelInfo")
+	bingo.Glogger.Warnf("<182>sso[%d]:%s|%s\t[%s]\t%s", 20003, "usrlog", utils.CurTime(), "WARN", "LevelWarn")
+	bingo.Glogger.Errorf("<182>sso[%d]:%s|%s\t[%s]\t%s", 20004, "usrlog", utils.CurTime(), "ERROR", "LevelError")
+	bingo.Glogger.Fatalf("<182>sso[%d]:%s|%s\t[%s]\t%s", 20005, "usrlog", utils.CurTime(), "FATAL", "LevelFatal")
 }
 
 // PressAction 一个简单的压力测试
@@ -409,15 +391,15 @@ func (c *DemoController) ParamAction() {
 
 // LangAction 语言包
 func (c *DemoController) LangAction() {
-	name := goweb.GLang.String("zh-cn", "name")
-	addr := goweb.GLang.String("zh-cn", "addr")
+	name := bingo.GLang.String("zh-cn", "name")
+	addr := bingo.GLang.String("zh-cn", "addr")
 	c.WriteString(name + ": " + addr + "<br />")
 
-	name = goweb.GLang.String("en-us", "name")
-	addr = goweb.GLang.String("en-us", "addr")
+	name = bingo.GLang.String("en-us", "name")
+	addr = bingo.GLang.String("en-us", "addr")
 	c.WriteString(name + ": " + addr + "<br />")
 
-	errs := goweb.GLang.Map("en-us", "err")
+	errs := bingo.GLang.Map("en-us", "err")
 	for k, v := range errs {
 		c.WriteString(k + ": " + v + "<br />")
 	}

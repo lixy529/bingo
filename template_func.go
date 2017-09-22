@@ -4,7 +4,7 @@
 package bingo
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/utils"
 	"html/template"
 	"time"
 	"html"

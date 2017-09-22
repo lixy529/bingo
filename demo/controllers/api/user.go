@@ -1,7 +1,7 @@
 // 带包名的自动路由测试
 package api
 
-import "legitlab.letv.cn/uc_tp/goweb/demo/controllers"
+import "github.com/bingo/demo/controllers"
 
 type UserController struct {
 	controllers.BaseController

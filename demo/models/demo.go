@@ -121,20 +121,3 @@ func (m *DemoModel) Sort() [100]int {
 
 	return arr
 }
-
-//MongoTest Mongo测试
-func (m *DemoModel) MongoTest(name string) (interface{}, error) {
-	instance, err := m.Mongo(name)
-	if err != nil {
-		return nil, err
-	}
-	_, errUpsert := instance.Upsert("vcs", "testmongo", map[string]string{"_id": "testmongo"}, map[string]string{"_id": "testmongo", "key": "value"})
-	if errUpsert != nil {
-		return nil, errUpsert
-	}
-	ret, errFindOne := instance.FindOne("vcs", "testmongo", map[string]string{"_id": "testmongo"})
-	if errFindOne != nil {
-		return nil, errFindOne
-	}
-	return ret, nil
-}

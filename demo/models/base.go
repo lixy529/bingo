@@ -4,10 +4,10 @@
 package models
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb"
-	_ "legitlab.letv.cn/uc_tp/goweb/db/mysql"
+	"github.com/bingo"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type BaseModel struct {
-	goweb.Model
+	bingo.Model
 }

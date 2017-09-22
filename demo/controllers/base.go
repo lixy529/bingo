@@ -4,9 +4,9 @@
 package controllers
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb"
+	"github.com/bingo"
 )
 
 type BaseController struct {
-	goweb.Controller
+	bingo.Controller
 }

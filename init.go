@@ -7,20 +7,17 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"legitlab.letv.cn/uc_tp/goweb/cache"
-	"legitlab.letv.cn/uc_tp/goweb/cache/memcache"
-	"legitlab.letv.cn/uc_tp/goweb/cache/redis"
-	"legitlab.letv.cn/uc_tp/goweb/db"
-	"legitlab.letv.cn/uc_tp/goweb/grpcclient"
-	"legitlab.letv.cn/uc_tp/goweb/lang"
-	"legitlab.letv.cn/uc_tp/goweb/logs"
-	"legitlab.letv.cn/uc_tp/goweb/mongo"
-	"legitlab.letv.cn/uc_tp/goweb/session"
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/cache"
+	"github.com/bingo/cache/memcache"
+	"github.com/bingo/cache/redis"
+	"github.com/bingo/db"
+	"github.com/bingo/lang"
+	"github.com/bingo/logs"
+	"github.com/bingo/session"
+	"github.com/bingo/utils"
 	"log"
 	"os"
 	"strconv"
-	"strings"
 )
 
 type initfunc func() error
@@ -28,12 +25,10 @@ type initfunc func() error
 var (
 	GlobalSession *session.Manager
 	GlobalDb      *db.DbBase
-	GlobalMongo   *mongo.MongoBase
 	Flogger       logs.Logger
 	Glogger       logs.Logger
 	GTemplate     *Template
 	GLang         *lang.Lang
-	GRpcClient    *grpcclient.GrpcClientBase
 	inits         = make([]initfunc, 0)
 )
 
@@ -49,11 +44,9 @@ func init() {
 	AddInitFunc(initSession)
 	AddInitFunc(initDb)
 	AddInitFunc(initCache)
-	AddInitFunc(initMongo)
 	AddInitFunc(initViews)
 	AddInitFunc(initLang)
 	AddInitFunc(initGzip)
-	AddInitFunc(initGrpcClient)
 }
 
 // AddInitFunc 添加init函数
@@ -163,31 +156,6 @@ func initCache() error {
 	return nil
 }
 
-// initMongo 初始化mongodb
-//   参数
-//     void
-//   返回
-//     成功返回nil，失败返回错误信息
-func initMongo() error {
-	var err error
-	var params []map[string]interface{}
-	for _, cfg := range AppCfg.MongoCfgs {
-		param := make(map[string]interface{})
-		param["mongoName"] = cfg.mongoName
-		param["connStr"] = cfg.connStr
-		param["maxPoolSize"] = cfg.maxPoolSize
-		param["timeout"] = cfg.timeout
-		param["mode"] = cfg.mode
-
-		params = append(params, param)
-	}
-
-	if len(params) > 0 {
-		GlobalMongo, err = mongo.NewMongoBase(params...)
-	}
-	return err
-}
-
 // initFrameLog 初始化框架使用的日志
 //   参数
 //     void
@@ -294,50 +262,4 @@ func initGzip() error {
 	gzipMinLen = AppCfg.ServerCfg.GzipMinLen
 
 	return nil
-}
-
-/*
-*    初始化grpc 客户端连接
-*    配置示例
-    [grpc_memfilter]
-     adapter  = memfilter
-     grpc_addr = 127.0.0.1:8082
-     timeout_ms = 20
-*/
-func initGrpcClient() error {
-	var err error
-	var params []map[string]interface{}
-
-	secs := GlobalCfg.GetSecs()
-	GrpcPre := "grpc_"
-	GrpcDef := "grpc"
-	for _, sec := range secs {
-		sec = strings.ToLower(sec)
-		n := len(GrpcPre)
-		if sec == GrpcDef || strings.HasPrefix(sec, GrpcPre) {
-			var adapterName string
-			if sec == GrpcDef || sec == GrpcPre {
-				adapterName = GrpcDef
-			} else {
-				adapterName = sec[n:]
-			}
-
-			if adapterName == "" {
-				continue
-			}
-
-			connStr := GlobalCfg.GetString(sec, "grpc_addr")
-			timeoutMs := GlobalCfg.GetInt(sec, "timeout_ms")
-			param := make(map[string]interface{})
-			param["adapter"] = adapterName
-			param["grpcAddr"] = connStr
-			param["timeoutMs"] = timeoutMs
-
-			params = append(params, param)
-		}
-	}
-	if len(params) > 0 {
-		GRpcClient, err = grpcclient.NewGrpcClientBase(params...)
-	}
-	return err
 }

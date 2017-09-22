@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"legitlab.letv.cn/uc_tp/goweb/session"
+	"github.com/bingo/session"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -15,7 +15,7 @@ import (
 	"strings"
 	"bytes"
 	"encoding/json"
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/utils"
 	"html/template"
 	"encoding/xml"
 )

@@ -4,7 +4,7 @@
 package logs
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/utils"
 	"encoding/json"
 	"fmt"
 )

@@ -4,11 +4,11 @@
 package main
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb"
-	_ "legitlab.letv.cn/uc_tp/goweb/demo/routers"
-	_ "legitlab.letv.cn/uc_tp/goweb/session/memcache"
+	"github.com/bingo"
+	_ "github.com/bingo/demo/routers"
+	_ "github.com/bingo/session/memcache"
 )
 
 func main() {
-	goweb.ObjApp.Run()
+	bingo.ObjApp.Run()
 }

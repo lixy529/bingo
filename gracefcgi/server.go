@@ -6,7 +6,7 @@ package gracefcgi
 
 import (
 	"fmt"
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/utils"
 	"log"
 	"net"
 	"net/http"

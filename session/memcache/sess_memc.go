@@ -9,8 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bradfitz/gomemcache/memcache"
-	"legitlab.letv.cn/uc_tp/goweb/session"
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/session"
+	"github.com/bingo/utils"
 	"strings"
 	"sync"
 )

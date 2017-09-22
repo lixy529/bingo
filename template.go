@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/utils"
 	"os"
 	"path/filepath"
 	"strings"

@@ -7,7 +7,7 @@ import (
 	json "github.com/json-iterator/go"
 	"errors"
 	"fmt"
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/utils"
 )
 
 const (

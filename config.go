@@ -6,7 +6,7 @@ package bingo
 import (
 	"errors"
 	"fmt"
-	"legitlab.letv.cn/uc_tp/goweb/config"
+	"github.com/bingo/config"
 	"os"
 	"path"
 	"strings"
@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	GlobalCfg *config.Config
+	GlobalCfg *config.StConfig
 	AppCfg    *AppConfig
 	AppRoot   string // 程序根目录
 )
@@ -185,7 +185,7 @@ func newAppConfig() (*AppConfig, error) {
 		AppName: GlobalCfg.GetString("app", "app_name", "App"),
 		RunMode: GlobalCfg.GetString("app", "run_mode", PROD),
 		LogName: "frame",
-		LogCfg:  fmt.Sprintf(`{"FilePath":"%s/log","filename":"goweb.log","maxlines":0,"maxsize":4000,"perm":"0660","level":1, "showcall":true, "depth":3}`, AppRoot),
+		LogCfg:  fmt.Sprintf(`{"FilePath":"%s/log","filename":"bingo.log","maxlines":0,"maxsize":4000,"perm":"0660","level":1, "showcall":true, "depth":3}`, AppRoot),
 
 		ServerCfg: ServerConfig{
 			PidFile:      getPidFile(),

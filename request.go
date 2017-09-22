@@ -4,14 +4,11 @@
 package bingo
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb/utils/schema"
 	"net/http"
 	"strconv"
 	"strings"
 	"net/url"
 )
-
-var decoder = schema.NewDecoder()
 
 type Request struct {
 	r         *http.Request
@@ -386,47 +383,4 @@ func (req *Request) GetCookie(name string) string {
 	}
 	val, _ := url.QueryUnescape(ck.Value)
 	return val
-}
-
-// GetReqPbStruct 获取pb请求结构
-//      根据请求参数填充pb请求结构体
-//   参数
-//     method: get or post
-//     pbPtr:  请求结构指针
-//   返回
-//     返回错误信息
-//   示例
-//     var reqStruct hdpb.LeChatHistoryReq
-//     errDec := c.Req.GetReqPbStruct("get", reqStruct)
-//     if errDec != nil {
-//
-//      }
-func (req *Request) GetReqPbStruct(method string, pbPtr interface{}) error {
-	var params map[string][]string
-	if strings.ToLower(method) == "get" {
-		params = req.getParam
-	} else {
-		params = req.postParam
-	}
-	for k, v := range req.r.Header {
-		if strings.HasPrefix(k, "Le-") {
-			tmpKey := strings.Replace(k, "-", "", -1)
-			params[strings.ToLower(tmpKey[0:1])+tmpKey[1:]] = v
-		}
-	}
-	err := decoder.DecodeUseConvPath(pbPtr, params)
-	//暂时只处理传入参数pbPtr不对  非法参数不处理
-	if err == schema.InvalidDst {
-		return err
-	}
-	return nil
-}
-
-// GetDecoder 返回Decoder
-//   参数
-//     void
-//   返回
-//     Decoder
-func GetDecoder() *schema.Decoder {
-	return decoder
 }

@@ -5,9 +5,9 @@ package bingo
 
 import (
 	"fmt"
-	"legitlab.letv.cn/uc_tp/goweb/gracefcgi"
-	"legitlab.letv.cn/uc_tp/goweb/gracehttp"
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/gracefcgi"
+	"github.com/bingo/gracehttp"
+	"github.com/bingo/utils"
 	"log"
 	"os"
 	"time"

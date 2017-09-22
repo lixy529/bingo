@@ -6,9 +6,8 @@ package bingo
 import (
 	"database/sql"
 	"errors"
-	"legitlab.letv.cn/uc_tp/goweb/cache"
-	"legitlab.letv.cn/uc_tp/goweb/db"
-	"legitlab.letv.cn/uc_tp/goweb/mongo"
+	"github.com/bingo/cache"
+	"github.com/bingo/db"
 )
 
 type Model struct {
@@ -214,11 +213,4 @@ func (m *Model) Rollback() error {
 //     成功时返回缓存适配器对象，失败返回错误信息
 func (m *Model) Cache(adapterName ...string) (cache.Cache, error) {
 	return cache.GetCache(adapterName...)
-}
-
-func (m *Model) Mongo(mongoName string) (*mongo.Mongodb, error) {
-	if GlobalMongo == nil {
-		return nil, nil
-	}
-	return GlobalMongo.GetMongo(mongoName)
 }

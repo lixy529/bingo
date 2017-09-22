@@ -4,7 +4,7 @@
 package redis
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb/cache"
+	"github.com/bingo/cache"
 	"fmt"
 	"testing"
 	"encoding/json"

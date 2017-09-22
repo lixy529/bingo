@@ -4,7 +4,7 @@
 package lang
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/utils"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -145,8 +145,8 @@ func (l *Lang) String(lang, key string) string {
 	}
 
 	keys := strings.Split(key, ":")
-	len := len(keys)
-	if len < 2 {
+	kLen := len(keys)
+	if kLen < 2 {
 		return ""
 	}
 	val, exist = l.ReadLang(lang, keys[0])
@@ -156,13 +156,13 @@ func (l *Lang) String(lang, key string) string {
 
 	var ok bool
 	var t map[string]interface{}
-	for i := 1; i < len; i++ {
+	for i := 1; i < kLen; i++ {
 		if t, ok = val.(map[string]interface{}); !ok {
 			return ""
 		}
 		k := keys[i]
 
-		if i == len-1 {
+		if i == kLen-1 {
 			v, ok := t[k]
 			if !ok {
 				return ""

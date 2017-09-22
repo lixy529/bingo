@@ -5,7 +5,7 @@ package logs
 
 import (
 	"fmt"
-	"legitlab.letv.cn/uc_tp/goweb/utils"
+	"github.com/bingo/utils"
 	"sync"
 	"testing"
 	"time"
@@ -41,8 +41,7 @@ func TestSockPool(t *testing.T) {
 	maxConns := 10
 	maxIdle := 5
 	idleTimeout := 3
-	wait := true
-	p := NewSockPool(sockFile, maxConns, maxIdle, time.Duration(idleTimeout), wait)
+	p := NewSockPool(sockFile, maxConns, maxIdle, time.Duration(idleTimeout), true)
 	if p == nil {
 		t.Error("NewSockPool error")
 		return

@@ -4,7 +4,7 @@
 package memory
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb/session"
+	"github.com/bingo/session"
 	"sync"
 	"time"
 )

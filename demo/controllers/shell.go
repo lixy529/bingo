@@ -4,8 +4,8 @@
 package controllers
 
 import (
-	"legitlab.letv.cn/uc_tp/goweb"
-	"legitlab.letv.cn/uc_tp/goweb/demo/models"
+	"github.com/bingo"
+	"github.com/bingo/demo/models"
 	"log"
 	"time"
 )
@@ -17,7 +17,7 @@ func IndexAction() {
 		log.Println("run once...")
 		time.Sleep(1 * time.Second)
 
-		if goweb.ObjApp.StopSrv(5) {
+		if bingo.ObjApp.StopSrv(5) {
 			break
 		}
 	}
@@ -40,7 +40,7 @@ func CacheAction() {
 		log.Printf("val = %s", val)
 		time.Sleep(1 * time.Second)
 
-		if goweb.ObjApp.StopSrv(5) {
+		if bingo.ObjApp.StopSrv(5) {
 			break
 		}
 	}
