@@ -47,6 +47,10 @@ func NewServer(addr string, port int, handler http.Handler, shutTimeout time.Dur
 		shutTimeout = DEFAULT_SHUT_TIMEOUT
 	}
 
+	if shutTimeout <= 0 {
+		shutTimeout = DEFAULT_SHUT_TIMEOUT
+	}
+
 	return &Server{
 		addr:        addr,
 		port:        port,

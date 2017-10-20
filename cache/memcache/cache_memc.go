@@ -19,6 +19,7 @@ const (
 	COMPRESSION_ZLIB     = "zlib"
 	FLAGES_UNCOMPRESS    = 6
 	FLAGES_JSON_COMPRESS = 54
+	FLAGES_STR_COMPRESS  = 48
 
 	NOT_EXIST = "cache miss"
 )
@@ -184,7 +185,11 @@ func (mc *MemcCache) Set(key string, val interface{}, expire int32, encode ...bo
 	if mc.compressType == COMPRESSION_ZLIB {
 		dataLen := len(data)
 		if dataLen > mc.compressThreshold {
-			flags = FLAGES_JSON_COMPRESS
+			if _, ok := val.(string); ok {
+				flags = FLAGES_STR_COMPRESS
+			} else {
+				flags = FLAGES_JSON_COMPRESS
+			}
 			data, err = utils.ZlibEncode(data)
 			if err != nil {
 				return err
@@ -221,7 +226,7 @@ func (mc *MemcCache) Get(key string, val interface{}) (error, bool) {
 
 	// 解压
 	data := item.Value
-	if item.Flags == FLAGES_JSON_COMPRESS {
+	if item.Flags == FLAGES_JSON_COMPRESS || item.Flags == FLAGES_STR_COMPRESS {
 		data, err = utils.ZlibDecode(data[4:])
 		if err != nil {
 			return err, true
@@ -308,7 +313,7 @@ func (mc *MemcCache) MGet(keys ...string) (map[string]interface{}, error) {
 	for key, val := range mv {
 		// 解压
 		data := val.Value
-		if val.Flags == FLAGES_JSON_COMPRESS {
+		if val.Flags == FLAGES_JSON_COMPRESS || val.Flags == FLAGES_STR_COMPRESS {
 			data, err = utils.ZlibDecode(data[4:])
 			if err != nil {
 				mList[key] = nil
