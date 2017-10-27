@@ -70,12 +70,12 @@ func initPidFile() error {
 
 	pidFile := AppCfg.ServerCfg.PidFile
 	err := utils.MkDir(pidFile, 0777, true)
-	if err == nil {
-		pid := []byte(strconv.Itoa(os.Getpid()))
-		return ioutil.WriteFile(pidFile, pid, 0666)
+	if err != nil {
+		return err
 	}
 
-	return err
+	pid := []byte(strconv.Itoa(os.Getpid()))
+	return ioutil.WriteFile(pidFile, pid, 0666)
 }
 
 // initSession 初始化Session信息
