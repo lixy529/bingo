@@ -5,15 +5,96 @@ package utils
 
 import (
 	"regexp"
+	"strings"
+)
+
+const (
+	IPV4 = 1
+	IPV6 = 2
+	IPVX = 3
 )
 
 // CheckIp 检验字符串是否是ip
 //   参数
+//     ip:  IP地址
+//     ipv: ip类型，可选值：IPV4、IPV6、IPVX，默认为IPV4
+//   返回
+//     是否IPv4地址
+func CheckIp(ip string, ipv ...int) bool {
+	ipv = append(ipv, IPV4)
+
+	if ipv[0] & IPV4 == IPV4 && IsIpv4(ip) {
+		return true
+	}
+
+	if ipv[0] & IPV6 == IPV6 && IsIpv6(ip) {
+		return true
+	}
+
+	return false
+}
+
+// IsIpv4 检验字符串是否是ipv4
+//   参数
+//     ip: IP地址
+//   返回
+//     是否IPv6地址
+func IsIpv4(ip string) bool {
+	pattern := `^((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$`
+	if m, _ := regexp.MatchString(pattern, ip); m {
+		return true
+	}
+
+	return false
+}
+
+// IsIpv6 检验字符串是否是ipv6
+//   参数
 //     ip: IP地址
 //   返回
 //     是否IP地址
-func CheckIp(ip string) bool {
-	pattern := `^((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$`
+func IsIpv6(ip string) bool {
+	// CDCD:910A:2222:5498:8475:1111:3900:2020 格式
+	pattern := `^([0-9a-fA-Z]{1,4}:){7}[0-9a-fA-Z]{1,4}$`
+	if m, _ := regexp.MatchString(pattern, ip); m {
+		return true
+	}
+
+	// F:F:F::1:1 F:F:F:F:F::1 F::F:F:F:F:1 格式
+	pattern = `^(([0-9a-fA-Z]{1,4}:){0,6})((:[0-9a-fA-Z]{1,4}){0,6})$`
+	if m, _ := regexp.MatchString(pattern, ip); m {
+		t := strings.Split(ip, ":")
+		if len(t) > 0 && len(t) <= 8 {
+			return true
+		}
+	}
+
+	// F:F:10F:: 格式
+	pattern = `^([0-9a-fA-F]{1,4}:){1,7}:$`
+	if m, _ := regexp.MatchString(pattern, ip); m {
+		return true
+	}
+
+	// ::F:F:10F 格式
+	pattern = `^:(:[0-9a-fA-F]{1,4}){1,7}$`
+	if m, _ := regexp.MatchString(pattern, ip); m {
+		return true
+	}
+
+	// F:0:0:0:0:0:10.0.0.1 格式
+	pattern = `^([0-9a-fA-F]{1,4}:){6}((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$`
+	if m, _ := regexp.MatchString(pattern, ip); m {
+		return true
+	}
+
+	// F::10.0.0.1 格式
+	pattern = `^([0-9a-fA-F]{1,4}:){1,5}:((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$`
+	if m, _ := regexp.MatchString(pattern, ip); m {
+		return true
+	}
+
+	// ::10.0.0.1 格式
+	pattern = `^::((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$`
 	if m, _ := regexp.MatchString(pattern, ip); m {
 		return true
 	}

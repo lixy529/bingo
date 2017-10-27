@@ -11,6 +11,8 @@ import (
 	"log"
 	"os"
 	"time"
+	"io/ioutil"
+	"strconv"
 )
 
 const (
@@ -158,7 +160,17 @@ func (app *App) afterRun() {
 
 	// 删除pid文件
 	if !isShell {
-		os.Remove(AppCfg.ServerCfg.PidFile)
+		fi, err := os.Open(AppCfg.ServerCfg.PidFile)
+		if err == nil {
+			defer fi.Close()
+			fd, err := ioutil.ReadAll(fi)
+			if err == nil {
+				myPid := strconv.Itoa(os.Getpid())
+				if myPid == string(fd) {
+					os.Remove(AppCfg.ServerCfg.PidFile)
+				}
+			}
+		}
 	}
 
 	return
