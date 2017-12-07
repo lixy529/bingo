@@ -34,7 +34,7 @@ func AddDate(years, months, days int) time.Time {
 }
 
 // StrToTimeStamp 日期字符串转时间戳
-//   请求
+//   参数
 //     strTime: 日期字符串
 //     fmtTime: 日期的格式，默认为2006-01-02 15:04:05
 //   返回
@@ -50,7 +50,7 @@ func StrToTimeStamp(timeStr string, timeFmt ...string) int64 {
 }
 
 // TimeStampToStr 日期字符串转时间戳
-//   请求
+//   参数
 //     args: 可以传如下参数
 //       时间戳: 小于等于0时取当前时间，类型为int64
 //       日期的格式: 默认为2006-01-02 15:04:05，类型为string

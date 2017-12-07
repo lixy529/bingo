@@ -33,7 +33,7 @@ func GetImageType(imgContent []byte) string {
 }
 
 // DecodeImg 解析图片
-//   请求
+//   参数
 //     imgFile: 图片文件路径
 //     imgType: 图片类型，目前只支持PNG、JPEG、GIF三种类型
 //   返回
@@ -67,7 +67,7 @@ func DecodeImg(imgFile string, imgType string) (image.Image, error) {
 }
 
 // EncodeImage 生成图片
-//   请求
+//   参数
 //     imgFile: 图片文件路径
 //     img:     解码后的图片内容
 //     imgType: 图片类型，目前只支持PNG、JPEG、GIF三种类型

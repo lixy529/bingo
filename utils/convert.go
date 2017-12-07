@@ -257,7 +257,7 @@ func StrToJSON(b []byte) string {
 }
 
 // MapToHttpQuery 将map转http参数串，如:a=11&b=22&c=33，特殊字符做url转码
-//   请求
+//   参数
 //     m: 待转换的map
 //   返回
 //     转换后的字符串
@@ -284,7 +284,7 @@ func MapToHttpQuery(m map[string]string) string {
 }
 
 // HttpQueryToMap 将http参数串转map
-//   请求
+//   参数
 //     m: 待转换的字符串
 //   返回
 //     转换后的map

@@ -129,7 +129,7 @@ func Curl(urlAddr, data, method string, timeout time.Duration, params ...map[int
 }
 
 // parseTLSConfig 解析证书文件
-//   请求
+//   参数
 //     certFile: cert证书
 //     keyFile:  key证书
 //     caFile:   根ca证书，可为空

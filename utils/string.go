@@ -148,7 +148,7 @@ func Html2Str(html string) string {
 }
 
 // StrSplit 字符串按指定长度分割到切片中
-//   请求
+//   参数
 //     src: 源字符串
 //     length: 分割的长度，如果长度小于等于0则返回空串
 //   返回

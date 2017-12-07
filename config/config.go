@@ -19,7 +19,7 @@ const (
 )
 
 // GetConfig 获取配置对象
-//   请求
+//   参数
 //     cfgFile: 配置文件
 //   返回
 //     配置对象、错误信息
@@ -33,7 +33,7 @@ func NewConfig(cfgFile string) (*StConfig, error) {
 }
 
 // ParseFile 解析配置文件
-//   请求
+//   参数
 //     cfgFile: 配置文件
 //   返回
 //     错误信息
