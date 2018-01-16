@@ -365,16 +365,16 @@ func (c *Controller) ParamAll() map[string]string {
 	return c.Req.pathParam
 }
 
-// ReqString 根据key获取对应的所有类型的参数
+// VarString 根据key获取对应的所有类型的参数
 // 优先级为path > get > post
 // 如果key对应多个值，则返回第一个值
-// c.ReqString("bb", "44")
+// c.VarString("bb", "44")
 //   参数
 //     key: key值
 //     def: 默认值
 //   返回
 //     value值
-func (c *Controller) ReqString(key string, def ...string) string {
+func (c *Controller) VarString(key string, def ...string) string {
 	// PATH
 	if v, ok := c.Req.pathParam[key]; ok {
 		return v
@@ -395,7 +395,7 @@ func (c *Controller) ReqString(key string, def ...string) string {
 	return def[0]
 }
 
-// ReqInt 返回int型
+// VarInt 返回int型
 // 优先级为path > get > post
 // 如果key不存在，则返回默认值
 //   参数
@@ -403,7 +403,7 @@ func (c *Controller) ReqString(key string, def ...string) string {
 //     def: 默认值
 //   返回
 //     value值
-func (c *Controller) ReqInt(key string, def ...int) (int, error) {
+func (c *Controller) VarInt(key string, def ...int) (int, error) {
 	// PATH
 	if v, ok := c.Req.pathParam[key]; ok {
 		return strconv.Atoi(v)
@@ -424,7 +424,7 @@ func (c *Controller) ReqInt(key string, def ...int) (int, error) {
 	return def[0], nil
 }
 
-// ReqBool 返回bool型
+// VarBool 返回bool型
 // 优先级为path > get > post
 // 如果key不存在，则返回默认值
 //   参数
@@ -432,7 +432,7 @@ func (c *Controller) ReqInt(key string, def ...int) (int, error) {
 //     def: 默认值
 //   返回
 //     value值
-func (c *Controller) ReqBool(key string, def ...bool) bool {
+func (c *Controller) VarBool(key string, def ...bool) bool {
 	// PATH
 	if v, ok := c.Req.pathParam[key]; ok {
 		switch strings.ToUpper(v) {

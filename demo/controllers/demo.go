@@ -375,13 +375,13 @@ func (c *DemoController) ParamAction() {
 	}
 
 	c.WriteString("==========\n")
-	id, _ = c.ReqInt("id1")
+	id, _ = c.VarInt("id1")
 	c.WriteString(strconv.Itoa(id) + "<br />")
 
-	name = c.ReqString("name1", "lixy")
+	name = c.VarString("name1", "lixy")
 	c.WriteString(name + "\n")
 
-	isa = c.ReqBool("isa1")
+	isa = c.VarBool("isa1")
 	if isa {
 		c.WriteString("yes" + "<br />")
 	} else {
