@@ -1,12 +1,13 @@
-// 解析配置文件测试
+// 解析配置文件包测试
 //   变更历史
-//     2017-09-18  lixiaoya  新建
+//     2017-02-06  lixiaoya  新建
 package config
 
-import "testing"
+import (
+	"testing"
+)
 
-// TestIniConfig 测试ini配置
-func TestIniConfig(t *testing.T) {
+func TestGetString(t *testing.T) {
 	cfgFile := "./cfg/app.ini"
 	obj, err := NewConfig(cfgFile)
 	if err != nil {

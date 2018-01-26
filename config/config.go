@@ -1,15 +1,15 @@
-// 解析配置文件
+// 解析配置文件包
 //   变更历史
-//     2017-09-18  lixiaoya  新建
+//     2017-02-06  lixiaoya  新建
 package config
 
 import (
-	"strings"
-	"strconv"
 	"bufio"
-	"path"
-	"os"
 	"io"
+	"os"
+	"path"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -18,29 +18,30 @@ const (
 	Inc_Str   = "include "
 )
 
-// GetConfig 获取配置对象
-//   参数
-//     cfgFile: 配置文件
-//   返回
-//     配置对象、错误信息
-func NewConfig(cfgFile string) (*StConfig, error) {
-	oConfig := &StConfig{
-		filePath: cfgFile,
-		configList: make(map[string]map[string]string),
-	}
-	err := oConfig.ParseFile(cfgFile)
-	return oConfig, err
+type Config struct {
+	filePath    string                       // 配置文件路径
+	includeFile []string                     // 包含的文件
+	configList  map[string]map[string]string // 配置文件内容
 }
 
-// ParseFile 解析配置文件
+// NewConfig 新建读取配置对象并返回
 //   参数
-//     cfgFile: 配置文件
+//     filePath: 配置文件路径
 //   返回
-//     错误信息
-func (c *StConfig) ParseFile(cfgFile string) error {
-	c.filePath = cfgFile
-	c.configList = make(map[string]map[string]string)
+//     成功返回Config实例化对象，失败返回错误信息
+func NewConfig(filePath string) (*Config, error) {
+	cfg := &Config{filePath: filePath, configList: make(map[string]map[string]string)}
+	err := cfg.readConfig()
 
+	return cfg, err
+}
+
+// readConfig 读取一个配置文件
+//   参数
+//
+//   返回
+//     成功返回nil，失败返回错误信息
+func (c *Config) readConfig() error {
 	err := c.parseOne(c.filePath)
 	if err != nil {
 		return err
@@ -71,7 +72,7 @@ func (c *StConfig) ParseFile(cfgFile string) error {
 //     filePath: 配置文件路径
 //   返回
 //     成功返回nil，失败返回错误信息
-func (c *StConfig) parseOne(filePath string) error {
+func (c *Config) parseOne(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -140,20 +141,13 @@ func (c *StConfig) parseOne(filePath string) error {
 	return nil
 }
 
-// 解析配置文件基类
-type StConfig struct {
-	filePath    string                       // 配置文件路径
-	includeFile []string                     // 包含的文件
-	configList  map[string]map[string]string // 配置文件内容
-}
-
 // getValue 根据key值获取对应的value值
 //   参数
 //     section: 段名
 //     key:     key值
 //   返回
 //     key存在时返回Value值，不存在返回空串
-func (c *StConfig) getValue(section, key string) (string, bool) {
+func (c *Config) getValue(section, key string) (string, bool) {
 	if mapSec, ok := c.configList[strings.ToUpper(section)]; ok {
 		if val, ok := mapSec[strings.ToUpper(key)]; ok {
 			return val, true
@@ -171,15 +165,13 @@ func (c *StConfig) getValue(section, key string) (string, bool) {
 //     def:     默认值
 //   返回
 //     Value值
-func (c *StConfig) GetString(section, key string, def ...string) string {
+func (c *Config) GetString(section, key string, def ...string) string {
 	if val, ok := c.getValue(section, key); ok {
 		return val
-	} else {
-		def = append(def, "")
-		return def[0]
 	}
 
-	return ""
+	def = append(def, "")
+	return def[0]
 }
 
 // GetBool 根据key值获取对应的value值，返回结果为bool型
@@ -190,7 +182,7 @@ func (c *StConfig) GetString(section, key string, def ...string) string {
 //     def:     默认值
 //   返回
 //     Value值
-func (c *StConfig) GetBool(section, key string, def ...bool) bool {
+func (c *Config) GetBool(section, key string, def ...bool) bool {
 	if val, ok := c.getValue(section, key); ok {
 		switch strings.ToUpper(val) {
 		case "1", "T", "TRUE", "YES", "Y", "ON":
@@ -198,10 +190,10 @@ func (c *StConfig) GetBool(section, key string, def ...bool) bool {
 		default:
 			return false
 		}
-	} else {
-		def = append(def, false)
-		return def[0]
 	}
+
+	def = append(def, false)
+	return def[0]
 }
 
 // GetInt 根据key值获取对应的value值，返回结果为int型
@@ -212,7 +204,7 @@ func (c *StConfig) GetBool(section, key string, def ...bool) bool {
 //     def:     默认值
 //   返回
 //     Value值
-func (c *StConfig) GetInt(section, key string, def ...int) int {
+func (c *Config) GetInt(section, key string, def ...int) int {
 	if val, ok := c.getValue(section, key); ok {
 		if val, err := strconv.Atoi(val); err == nil {
 			return val
@@ -220,10 +212,10 @@ func (c *StConfig) GetInt(section, key string, def ...int) int {
 			def = append(def, 0)
 			return def[0]
 		}
-	} else {
-		def = append(def, 0)
-		return def[0]
 	}
+
+	def = append(def, 0)
+	return def[0]
 }
 
 // GetInt32 根据key值获取对应的value值，返回结果为int32型
@@ -234,7 +226,7 @@ func (c *StConfig) GetInt(section, key string, def ...int) int {
 //     def:     默认值
 //   返回
 //     Value值
-func (c *StConfig) GetInt32(section, key string, def ...int32) int32 {
+func (c *Config) GetInt32(section, key string, def ...int32) int32 {
 	if val, ok := c.getValue(section, key); ok {
 		if val, err := strconv.ParseInt(val, 10, 64); err == nil {
 			return int32(val)
@@ -242,10 +234,10 @@ func (c *StConfig) GetInt32(section, key string, def ...int32) int32 {
 			def = append(def, 0)
 			return def[0]
 		}
-	} else {
-		def = append(def, 0)
-		return def[0]
 	}
+
+	def = append(def, 0)
+	return def[0]
 }
 
 // GetInt64 根据key值获取对应的value值，返回结果为int64型
@@ -256,7 +248,7 @@ func (c *StConfig) GetInt32(section, key string, def ...int32) int32 {
 //     def:     默认值
 //   返回
 //     Value值
-func (c *StConfig) GetInt64(section, key string, def ...int64) int64 {
+func (c *Config) GetInt64(section, key string, def ...int64) int64 {
 	if val, ok := c.getValue(section, key); ok {
 		if val, err := strconv.ParseInt(val, 10, 64); err == nil {
 			return val
@@ -264,10 +256,10 @@ func (c *StConfig) GetInt64(section, key string, def ...int64) int64 {
 			def = append(def, 0)
 			return def[0]
 		}
-	} else {
-		def = append(def, 0)
-		return def[0]
 	}
+
+	def = append(def, 0)
+	return def[0]
 }
 
 // GetFloat64 根据key值获取对应的value值，返回结果为float64型
@@ -278,7 +270,7 @@ func (c *StConfig) GetInt64(section, key string, def ...int64) int64 {
 //     def:     默认值
 //   返回
 //     Value值
-func (c *StConfig) GetFloat64(section, key string, def ...float64) float64 {
+func (c *Config) GetFloat64(section, key string, def ...float64) float64 {
 	if val, ok := c.getValue(section, key); ok {
 		if val, err := strconv.ParseFloat(val, 64); err == nil {
 			return val
@@ -286,10 +278,10 @@ func (c *StConfig) GetFloat64(section, key string, def ...float64) float64 {
 			def = append(def, 0.00)
 			return def[0]
 		}
-	} else {
-		def = append(def, 0.00)
-		return def[0]
 	}
+
+	def = append(def, 0.00)
+	return def[0]
 }
 
 // SetValue 设置一个key值
@@ -300,8 +292,8 @@ func (c *StConfig) GetFloat64(section, key string, def ...float64) float64 {
 //     key:     key值
 //     def:     默认值
 //   返回
-//     void
-func (c *StConfig) SetValue(section, key, value string) {
+//
+func (c *Config) SetValue(section, key, value string) {
 	section = strings.ToUpper(section)
 	key = strings.ToUpper(key)
 	_, ok := c.configList[section]
@@ -319,7 +311,7 @@ func (c *StConfig) SetValue(section, key, value string) {
 //     section: 段名
 //   返回
 //     段下对应的所有Value值
-func (c *StConfig) GetSec(section string) (map[string]string, bool) {
+func (c *Config) GetSec(section string) (map[string]string, bool) {
 	mapSec, ok := c.configList[strings.ToUpper(section)]
 	if ok {
 		return mapSec, true
@@ -330,10 +322,10 @@ func (c *StConfig) GetSec(section string) (map[string]string, bool) {
 
 // GetSecs 获取所有段名
 //   参数
-//     void
+//
 //   返回
 //     所有段列表
-func (c *StConfig) GetSecs() []string {
+func (c *Config) GetSecs() []string {
 	var secs []string
 	for sec, _ := range c.configList {
 		secs = append(secs, sec)
