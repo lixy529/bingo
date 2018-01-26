@@ -359,7 +359,7 @@ func (rc *RedisCache) ZCard(key string) (int64, error) {
 //     cmds: 要执行的命令
 //   返回
 //     成功刊返回命令执行的结果，失败返回错误信息
-func (rc *RedisCache) Pipeline(cmds ...cache.Cmd) ([]interface{}, error) {
+func (rc *RedisCache) Pipeline(cmds ...cache.Cmd) ([]cache.PipeRes) {
 	return rc.master.Pipeline(cmds...)
 }
 
@@ -990,8 +990,8 @@ func (rp *RedisPool) ZCard(key string) (int64, error) {
 //   参数
 //     cmds: 要执行的命令
 //   返回
-//     成功刊返回命令执行的结果，失败返回错误信息
-func (rp *RedisPool) Pipeline(cmds ...cache.Cmd) ([]interface{}, error) {
+//     成功返回命令执行的结果，失败返回错误信息
+func (rp *RedisPool) Pipeline(cmds ...cache.Cmd) ([]cache.PipeRes) {
 	c := rp.connPool.Get()
 	defer c.Close()
 
@@ -999,30 +999,35 @@ func (rp *RedisPool) Pipeline(cmds ...cache.Cmd) ([]interface{}, error) {
 	for _, cmd := range cmds {
 		err := c.Send(cmd.Name, cmd.Args...)
 		if err != nil {
-			return nil, err
+			break
 		}
 		n++
 	}
+
+	ret := []cache.PipeRes{}
 	err := c.Flush()
 	if err != nil {
-		return nil, err
+		return ret
 	}
-	var ret []interface{}
+
 	for i := 0; i < n; i++ {
 		reply, err := c.Receive()
+		cmdRes := cache.PipeRes{}
 		if err != nil {
-			return ret, err
+			cmdRes.CmdErr = err
+		} else {
+			cmdRes.CmdRes = reply
 		}
-		ret = append(ret, reply)
+		ret = append(ret, cmdRes)
 	}
-	return ret, nil
+	return ret
 }
 
 // Exec 执行pipeline事务命令
 //   参数
 //     cmds: 要执行的命令
 //   返回
-//     成功刊返回命令执行的结果，失败返回错误信息
+//     成功返回命令执行的结果，失败返回错误信息
 func (rp *RedisPool) Exec(cmds ...cache.Cmd) (interface{}, error) {
 	c := rp.connPool.Get()
 	defer c.Close()

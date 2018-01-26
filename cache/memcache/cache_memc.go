@@ -16,21 +16,24 @@ import (
 )
 
 const (
-	COMPRESSION_ZLIB     = "zlib"
-	FLAGES_UNCOMPRESS    = 6
-	FLAGES_JSON_COMPRESS = 54
-	FLAGES_STR_COMPRESS  = 48
+	COMPRESSION_ZLIB        = "zlib"
+	FLAGES_INT_UNCOMPRESS   = 1
+	FLAGES_FLOAT_UNCOMPRESS = 2
+	FLAGES_JSON_UNCOMPRESS  = 6
+	FLAGES_JSON_COMPRESS    = 54
+	FLAGES_STR_UNCOMPRESS   = 0
+	FLAGES_STR_COMPRESS     = 48
 
 	NOT_EXIST = "cache miss"
 )
 
 // MemcCache memcache缓存
 type MemcCache struct {
-	conn        *memcache.Client
-	connCfg     []string
-	maxIdle     int           // 最大空闲连接数，默认为2，如果配置值小于1则使用默认值
-	idelTimeOut time.Duration // 空闲超时时间，默认为100毫秒, 0不限制
-	prefix      string        // key前缀，如果配置里有，则所有key前自动添加此前缀
+	conn      *memcache.Client
+	connCfg   []string
+	maxIdle   int           // 最大空闲连接数，默认为2，如果配置值小于1则使用默认值
+	ioTimeOut time.Duration // io超时时间，默认为100毫秒, 0不限制
+	prefix    string        // key前缀，如果配置里有，则所有key前自动添加此前缀
 
 	serializer        string // 序列化，目前只支持json
 	compressType      string // 压缩类型，目前只支持zlib
@@ -63,8 +66,8 @@ func (mc *MemcCache) connect() error {
 		mc.conn.MaxIdleConns = mc.maxIdle
 	}
 
-	if mc.idelTimeOut >= 0 {
-		mc.conn.Timeout = mc.idelTimeOut * time.Second
+	if mc.ioTimeOut >= 0 {
+		mc.conn.Timeout = mc.ioTimeOut * time.Second
 	}
 
 	return nil
@@ -76,7 +79,7 @@ func (mc *MemcCache) connect() error {
 //       {
 //       "addr":"127.0.0.1:11211,127.0.0.2:11211",
 //       "maxIdle":"3",
-//       "idelTimeOut":"180",
+//       "ioTimeOut":"1",
 //       "prefix":"le_",
 //       "serializer":"json",
 //       "compressType":"zlib",
@@ -103,11 +106,15 @@ func (mc *MemcCache) Init(config string) error {
 	} else {
 		mc.maxIdle = -1
 	}
-	if _, ok = mapCfg["idelTimeOut"]; ok {
-		idelTimeOut, _ := strconv.Atoi(mapCfg["idelTimeOut"])
-		mc.idelTimeOut = time.Duration(idelTimeOut)
+	if _, ok = mapCfg["ioTimeOut"]; ok {
+		ioTimeOut, _ := strconv.Atoi(mapCfg["ioTimeOut"])
+		mc.ioTimeOut = time.Duration(ioTimeOut)
+	} else if _, ok = mapCfg["idelTimeOut"]; ok {
+		// 之前理解错误，配置做一下兼容
+		ioTimeOut, _ := strconv.Atoi(mapCfg["idelTimeOut"])
+		mc.ioTimeOut = time.Duration(ioTimeOut)
 	} else {
-		mc.idelTimeOut = -1
+		mc.ioTimeOut = -1
 	}
 	if prefix, ok := mapCfg["prefix"]; ok {
 		mc.prefix = prefix
@@ -150,7 +157,7 @@ func (mc *MemcCache) Init(config string) error {
 //   参数
 //     key:    key值
 //     val:    value值
-//     expire: 到期是缓存过期时间，以秒为单位：从现在开始的相对时间（最多1个月）或绝对Unix纪元时间。“0”表示项目没有到期时间。
+//     expire: 到期是缓存过期时间，以秒为单位，从现在开始的相对时间，“0”表示项目没有到期时间。
 //     encode: 是否加密标识
 //   返回
 //     成功时返回nil，失败返回错误信息
@@ -163,6 +170,10 @@ func (mc *MemcCache) Set(key string, val interface{}, expire int32, encode ...bo
 		key = mc.prefix + key
 	}
 
+	// 超过30天使用Unix纪元时间
+	if expire > 86400*30 {
+		expire = int32(time.Now().Unix()) + expire
+	}
 	item := memcache.Item{Key: key, Expiration: expire}
 
 	// 类型转换
@@ -180,12 +191,31 @@ func (mc *MemcCache) Set(key string, val interface{}, expire int32, encode ...bo
 		}
 	}
 
-	flags := FLAGES_UNCOMPRESS
+	// flags设置
+	flags := FLAGES_JSON_UNCOMPRESS
+	valType := ""
+	if _, ok := val.(string); ok {
+		valType = "string"
+		flags = FLAGES_STR_UNCOMPRESS
+	} else if _, ok := val.(float64); ok {
+		valType = "float"
+		flags = FLAGES_FLOAT_UNCOMPRESS
+	} else if _, ok := val.(int64); ok {
+		valType = "int"
+		flags = FLAGES_INT_UNCOMPRESS
+	} else if _, ok := val.(int32); ok {
+		valType = "int"
+		flags = FLAGES_INT_UNCOMPRESS
+	} else if _, ok := val.(int); ok {
+		valType = "int"
+		flags = FLAGES_INT_UNCOMPRESS
+	}
+
 	// 目前只支持zlib压缩
 	if mc.compressType == COMPRESSION_ZLIB {
 		dataLen := len(data)
 		if dataLen > mc.compressThreshold {
-			if _, ok := val.(string); ok {
+			if valType == "string" {
 				flags = FLAGES_STR_COMPRESS
 			} else {
 				flags = FLAGES_JSON_COMPRESS
@@ -480,8 +510,9 @@ func (mc *MemcCache) ZCard(key string) (int64, error) {
 }
 
 // Pipeline 执行pipeline命令，memcache不支持pipeline
-func (mc *MemcCache) Pipeline(cmds ...cache.Cmd) ([]interface{}, error) {
-	return nil, errors.New("MemcCache: Memcache don't support Pipeline")
+func (mc *MemcCache) Pipeline(cmds ...cache.Cmd) ([]cache.PipeRes) {
+	ret := []cache.PipeRes{}
+	return ret
 }
 
 // Exec 执行pipeline事务命令，memcache不支持pipeline

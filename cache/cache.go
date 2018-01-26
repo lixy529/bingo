@@ -46,7 +46,7 @@ type Cache interface {
 	ZCard(key string) (int64, error)
 
 	// pipeline支持
-	Pipeline(cmds ...Cmd) ([]interface{}, error)
+	Pipeline(cmds ...Cmd) ([]PipeRes)
 	Exec(cmds ...Cmd) (interface{}, error)
 }
 
@@ -54,6 +54,12 @@ type Cache interface {
 type IJson interface {
 	MarshalJSON() ([]byte, error)
 	UnmarshalJSON(data []byte) error
+}
+
+// Pipeline 执行结果
+type PipeRes struct {
+	CmdRes interface{}
+	CmdErr error
 }
 
 // Cmd 保存命令，用于pipeline传递命令

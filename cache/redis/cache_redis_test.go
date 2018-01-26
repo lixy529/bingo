@@ -13,7 +13,7 @@ import (
 func TestRedisCache(t *testing.T) {
 	var err error
 	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"127.0.0.1:6378","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6378","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -263,7 +263,7 @@ func TestRedisCache(t *testing.T) {
 func TestRedisMulti(t *testing.T) {
 	var err error
 	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -320,7 +320,7 @@ func TestRedisMulti(t *testing.T) {
 func TestRedisSet(t *testing.T) {
 	var err error
 	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -398,7 +398,7 @@ type User struct {
 func TestStruct(t *testing.T) {
 	var err error
 	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -457,7 +457,7 @@ func TestStruct(t *testing.T) {
 func TestRedisEncode(t *testing.T) {
 	var err error
 	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -571,7 +571,7 @@ func (this *Item)UnmarshalJSON(data []byte) error {
 func TestRedisIJson(t *testing.T) {
 	var err error
 	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -651,11 +651,11 @@ func TestRedisIJson(t *testing.T) {
 	}
 }
 
-// TestPipeline
-func TestPipeline(t *testing.T) {
+// TestExec
+func TestExec(t *testing.T) {
 	var err error
 	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	err = adapter.Init(`{"master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
