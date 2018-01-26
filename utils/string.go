@@ -107,6 +107,17 @@ func Empty(str string) bool {
 	return false
 }
 
+// MbLen 获取字符串的字符数
+//   参数
+//     str: 要判断的字符串
+//   返回
+//     字符数
+func MbLen(str string) int {
+	b := []rune(str)
+
+	return len(b)
+}
+
 // GetSafeSql 防sql注入，将sql特殊字符进行删除
 //   参数
 //     str: 要处理的字符串

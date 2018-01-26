@@ -18,6 +18,7 @@ import (
 	"time"
 	"path"
 	"regexp"
+	"net/url"
 )
 
 const (
@@ -64,7 +65,7 @@ func Guid() string {
 //   返回
 //     生成的字符串
 func Krand(size int, kind int) string {
-	ikind, kinds, result := kind, [][]int{[]int{10, 48}, []int{26, 97}, []int{26, 65}}, make([]byte, size)
+	ikind, bases, scopes, result := kind, []int{48, 97, 65}, []int{10, 26, 26}, make([]byte, size)
 	is_all := kind > 3 || kind < 0
 	mrand.Seed(time.Now().UnixNano())
 	for i := 0; i < size; i++ {
@@ -74,7 +75,7 @@ func Krand(size int, kind int) string {
 			ikind = RAND_KIND_LOWER + mrand.Intn(2)
 		}
 
-		scope, base := kinds[ikind][0], kinds[ikind][1]
+		base, scope := bases[ikind], scopes[ikind]
 		result[i] = uint8(base + mrand.Intn(scope))
 	}
 	return string(result)
@@ -111,31 +112,48 @@ func RangeInt(start, end int) []int {
 }
 
 // getTopDomain 获取一级域名，sessionId的cookie记录到一级域名下
-// 比如: mail.le.com 返回 le.com
+// 比如: www.baidu.com 返回 baidu.com
 //   参数
 //     domain: 域名
 //   返回
 //     一级域名
 func GetTopDomain(domain string) string {
-	if domain != "" {
-		hostParts := strings.Split(domain, ":")
-		if len(hostParts) > 0 {
-			domain = hostParts[0]
-		}
-
-		// ip直接返回
-		if CheckIp(domain) {
-			return domain
-		}
-
-		domainParts := strings.Split(domain, ".")
-		l := len(domainParts)
-		if l > 2 {
-			domain = domainParts[l-2] + "." + domainParts[l-1]
-		}
+	if domain == "" {
+		return ""
 	}
 
-	return domain
+	// 解析url
+	domain = strings.ToLower(domain)
+	urlAddr := domain
+	if !strings.HasPrefix(domain, "http://") && !strings.HasPrefix(domain, "https://") {
+		urlAddr = "http://" + domain
+	}
+	urlObj, err := url.Parse(urlAddr)
+	if err != nil {
+		return domain
+	}
+	urlHost := urlObj.Host
+	if strings.Contains(urlHost, ":") {
+		urlList := strings.Split(urlHost, ":")
+		urlHost = urlList[0]
+	}
+	if urlHost == "" {
+		return domain
+	}
+
+	// ip直接返回
+	if CheckIp(urlHost) {
+		return urlHost
+	}
+
+	// 获取一级域名
+	domainParts := strings.Split(urlHost, ".")
+	l := len(domainParts)
+	if l > 1 {
+		urlHost = domainParts[l-2] + "." + domainParts[l-1]
+	}
+
+	return urlHost
 }
 
 // GetLocalIp 获取本机IP
@@ -168,7 +186,7 @@ func GetLocalIp() string {
 func Stack(depth ...int) string {
 	var stack string
 	var start int = 1
-	var end int = 10
+	var end int = 20
 	if len(depth) > 0 {
 		start = depth[0]
 	}
@@ -277,4 +295,34 @@ func GetTerminal(userAgent string) (string, string) {
 	}
 
 	return "pc", "win"
+}
+
+// SelStrVal 根据条件返回相应选项
+//   参数
+//     con:  条件
+//     opt1: 选项1
+//     opt2: 选项2
+//   返回
+//     如果条件为true，返回选项1，否则返回选项2
+func SelStrVal(con bool, opt1, opt2 string) string {
+	if con {
+		return opt1
+	}
+
+	return opt2
+}
+
+// SelIntVal 根据条件返回相应选项
+//   参数
+//     con:  条件
+//     opt1: 选项1
+//     opt2: 选项2
+//   返回
+//     如果条件为true，返回选项1，否则返回选项2
+func SelIntVal(con bool, opt1, opt2 int) int {
+	if con {
+		return opt1
+	}
+
+	return opt2
 }

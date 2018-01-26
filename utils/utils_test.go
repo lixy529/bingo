@@ -21,7 +21,7 @@ func TestGuid(t *testing.T) {
 
 // TestGetTopDomain GetTopDomain函数测试
 func TestGetTopDomain(t *testing.T) {
-	domain := "www.lixy.com:9090"
+	domain := "http://www.lixy.com:9090?aa=11&b=22"
 	topDomain := GetTopDomain(domain)
 	if topDomain != "lixy.com" {
 		t.Errorf("GetString failed. Got %s, expected lixy.com.", topDomain)
@@ -39,6 +39,34 @@ func TestGetTopDomain(t *testing.T) {
 	topDomain = GetTopDomain(domain)
 	if topDomain != "le.com" {
 		t.Errorf("GetString failed. Got %s, expected le.com.", topDomain)
+		return
+	}
+
+	domain = "http://www.lixy.com:9090?aa=bb&ccc=dd"
+	topDomain = GetTopDomain(domain)
+	if topDomain != "lixy.com" {
+		t.Errorf("GetString failed. Got %s, expected lixy.com.", topDomain)
+		return
+	}
+
+	domain = "www.lixy.com?aa=bb&ccc=dd"
+	topDomain = GetTopDomain(domain)
+	if topDomain != "lixy.com" {
+		t.Errorf("GetString failed. Got %s, expected lixy.com.", topDomain)
+		return
+	}
+
+	domain = "127.0.0.1?aa=bb&ccc=dd"
+	topDomain = GetTopDomain(domain)
+	if topDomain != "127.0.0.1" {
+		t.Errorf("GetString failed. Got %s, expected 127.0.0.1.", topDomain)
+		return
+	}
+
+	domain = "www.lixy.com"
+	topDomain = GetTopDomain(domain)
+	if topDomain != "lixy.com" {
+		t.Errorf("GetString failed. Got %s, expected lixy.com.", topDomain)
 		return
 	}
 }
@@ -71,7 +99,7 @@ func TestKrand(t *testing.T) {
 // TestIrand 测试Irand函数
 func TestIrand(t *testing.T) {
 	for i := 0; i <= 100; i++ {
-		n := Irand(100, 300)
+		n := Irand(100, 100)
 		fmt.Println(n)
 		if n < 100 || n > 300 {
 			t.Errorf("Irand failed. Got %d, expected 100-300.", n)
@@ -122,5 +150,35 @@ func TestGetTerminal(t *testing.T) {
 	if tType != "pc" || osType != "win" {
 		t.Errorf("GetString failed. Got %s-%s, expected pc-win.", tType, osType)
 		return
+	}
+}
+
+// TestSelStrVal SelStrVal函数测试
+func TestSelStrVal(t *testing.T) {
+	opt1 := "aaa"
+	opt2 := "bbb"
+	opt := SelStrVal(true, opt1, opt2)
+	if opt != opt1 {
+		t.Errorf("SelStrVal err, Got:%s expected:%s", opt, opt1)
+	}
+
+	opt = SelStrVal(false, opt1, opt2)
+	if opt != opt2 {
+		t.Errorf("SelStrVal err, Got:%s expected:%s", opt, opt2)
+	}
+}
+
+// TestSelIntVal SelIntVal函数测试
+func TestSelIntVal(t *testing.T) {
+	opt1 := 111
+	opt2 := 222
+	opt := SelIntVal(true, opt1, opt2)
+	if opt != opt1 {
+		t.Errorf("SelIntVal err, Got:%d expected:%d", opt, opt1)
+	}
+
+	opt = SelIntVal(false, opt1, opt2)
+	if opt != opt2 {
+		t.Errorf("SelIntVal err, Got:%d expected:%d", opt, opt2)
 	}
 }

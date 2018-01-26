@@ -79,3 +79,15 @@ func TimeStampToStr(args ...interface{}) string {
 
 	return time.Unix(timeStamp, 0).Format(timeFmt)
 }
+
+// TomrrowRest 获取从现在到明天凌晨的剩余时间，单位秒
+//   参数
+//     void
+//   返回
+//     到明天凌晨的剩余时间
+func TomrrowRest() int64 {
+	tom := AddDate(0, 0, 1)
+	tomStr, _ := time.ParseInLocation("2006-01-02", tom.Format("2006-01-02"), time.Local)
+
+	return tomStr.Unix() - time.Now().Unix()
+}

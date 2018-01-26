@@ -21,13 +21,13 @@ import (
 //   返回
 //     IP字符串形式
 func IpItoa(iIp int64) string {
-	var bytes [4]byte
-	bytes[0] = byte(iIp & 0xFF)
-	bytes[1] = byte((iIp >> 8) & 0xFF)
-	bytes[2] = byte((iIp >> 16) & 0xFF)
-	bytes[3] = byte((iIp >> 24) & 0xFF)
+	var bs [4]byte
+	bs[0] = byte(iIp & 0xFF)
+	bs[1] = byte((iIp >> 8) & 0xFF)
+	bs[2] = byte((iIp >> 16) & 0xFF)
+	bs[3] = byte((iIp >> 24) & 0xFF)
 
-	return net.IPv4(bytes[3], bytes[2], bytes[1], bytes[0]).String()
+	return net.IPv4(bs[3], bs[2], bs[1], bs[0]).String()
 }
 
 // IpAtoi IP字符串转整型
@@ -37,8 +37,11 @@ func IpItoa(iIp int64) string {
 //   返回
 //     IP整型形式
 func IpAtoi(sIp string) int64 {
-	bits := strings.Split(sIp, ".")
+	if !IsIpv4(sIp) {
+		return -1
+	}
 
+	bits := strings.Split(sIp, ".")
 	b0, _ := strconv.Atoi(bits[0])
 	b1, _ := strconv.Atoi(bits[1])
 	b2, _ := strconv.Atoi(bits[2])
@@ -132,15 +135,15 @@ func ByteToInt64(b []byte, isBig bool) int64 {
 //     转成结果
 func Float32ToByte(f float32, isBig bool) []byte {
 	bits := math.Float32bits(f)
-	bytes := make([]byte, 4)
+	bs := make([]byte, 4)
 	if isBig {
-		binary.BigEndian.PutUint32(bytes, bits)
+		binary.BigEndian.PutUint32(bs, bits)
 	} else {
-		binary.LittleEndian.PutUint32(bytes, bits)
+		binary.LittleEndian.PutUint32(bs, bits)
 	}
 
 
-	return bytes
+	return bs
 }
 
 // ByteToFloat32 []byte转foat32
@@ -168,15 +171,14 @@ func ByteToFloat32(b []byte, isBig bool) float32 {
 //     转成结果
 func Float64ToByte(f float64, isBig bool) []byte {
 	bits := math.Float64bits(f)
-	bytes := make([]byte, 8)
+	bs := make([]byte, 8)
 	if isBig {
-		binary.BigEndian.PutUint64(bytes, bits)
+		binary.BigEndian.PutUint64(bs, bits)
 	} else {
-		binary.LittleEndian.PutUint64(bytes, bits)
+		binary.LittleEndian.PutUint64(bs, bits)
 	}
 
-
-	return bytes
+	return bs
 }
 
 // ByteToFloat64 []byte转foat64

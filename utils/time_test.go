@@ -55,3 +55,9 @@ func TestTimeStampToStr(t *testing.T) {
 		return
 	}
 }
+
+// TestTomrrowRest TomrrowRest测试
+func TestTomrrowRest(t *testing.T) {
+	dd := TomrrowRest()
+	fmt.Println(dd)
+}

@@ -111,6 +111,30 @@ func TestEmpty(t *testing.T) {
 	}
 }
 
+// TestMbLen MbLen测试
+func TestMbLen(t *testing.T) {
+	str := "我爱五星红旗,Do you love it?"
+	l := MbLen(str)
+	if l != 22 {
+		t.Error("MbLen err, Got %d, expected 22", l)
+		return
+	}
+
+	str = "1234567890"
+	l = MbLen(str)
+	if l != 10 {
+		t.Error("MbLen err, Got %d, expected 10", l)
+		return
+	}
+
+	str = "我爱五星红旗"
+	l = MbLen(str)
+	if l != 6 {
+		t.Error("MbLen err, Got %d, expected 6", l)
+		return
+	}
+}
+
 // TestGetSafeSql GetSafeSql测试
 func TestGetSafeSql(t *testing.T) {
 	str := "Select 11 seleCt 22 upDate 33 information_schema.columns 44 table_sChema 55 net user BBBSelect Update"
