@@ -16,8 +16,8 @@ type DbBase struct {
 // NewDbBase 新建DbBase
 //   参数
 //     configs: 配置信息，比如：
-//       dbName = db_cn # cn将做为dbs的key值
-//       driverName = mysql
+//       dbName => db_cn # cn将做为dbs的key值
+//       driverName => mysql
 //       maxConn = 200 # 最大连接数
 //       maxIdle = 100 # 最大空闲连接数
 //       maxLife = 21600 # 可被重新使用的最大时间间隔，如果小于0将永久重用，单位秒

@@ -15,7 +15,7 @@ func TestDbHandle(t *testing.T) {
 	var err error
 
 	// Open
-	err = h.Open("mysql", 200, 100, 21600, "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8", "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8", "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8")
+	err = h.Open("mysql", 200, 100, 21600, "root:root123@tcp(127.0.0.1:3306)/passport?charset=utf8", "root:root123@tcp(127.0.0.1:3306)/passport?charset=utf8", "root:root123@tcp(127.0.0.1:3306)/passport?charset=utf8")
 	if err != nil {
 		t.Errorf("handle.Open error, [%s]", err.Error())
 		return
@@ -85,7 +85,7 @@ func TestTxDbHandle(t *testing.T) {
 	h := NewDbHandle()
 
 	// Open
-	err := h.Open("mysql", 200, 100, 21600, "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8", "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8", "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8")
+	err := h.Open("mysql", 200, 100, 21600, "root:root123@tcp(127.0.0.1:3306)/passport?charset=utf8", "root:root123@tcp(127.0.0.1:3306)/passport?charset=utf8", "root:root123@tcp(127.0.0.1:3306)/passport?charset=utf8")
 	if err != nil {
 		t.Errorf("handle.Open error, [%s]", err.Error())
 		return

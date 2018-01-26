@@ -5,7 +5,7 @@ package db
 
 import (
 	"fmt"
-	//_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"testing"
 )
 
@@ -17,8 +17,8 @@ func TestDb(t *testing.T) {
 	map1["maxConn"] = 200
 	map1["maxIdle"] = 100
 	map1["maxLife"] = 21600
-	map1["master"] = "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8"
-	map1["slaves"] = []string{"root:root123@tcp(10.110.92.205:3309)/test?charset=utf8", "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8"}
+	map1["master"] = "root:root123@tcp(10.11.145.15:3306)/passport?charset=utf8"
+	map1["slaves"] = []string{"root:root123@tcp(10.11.145.15:3306)/passport?charset=utf8", "root:root123@tcp(10.11.145.15:3306)/passport?charset=utf8"}
 
 	map2 := make(map[string]interface{})
 	map2["dbName"] = "us"
@@ -26,8 +26,8 @@ func TestDb(t *testing.T) {
 	map2["maxConn"] = 500
 	map2["maxIdle"] = 200
 	map2["maxLife"] = 21600
-	map2["master"] = "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8"
-	map2["slaves"] = []string{"root:root123@tcp(10.110.92.205:3309)/test?charset=utf8", "root:root123@tcp(10.110.92.205:3309)/test?charset=utf8"}
+	map2["master"] = "root:root123@tcp(10.11.145.15:3306)/passport?charset=utf8"
+	map2["slaves"] = []string{"root:root123@tcp(10.11.145.15:3306)/passport?charset=utf8", "root:root123@tcp(10.11.145.15:3306)/passport?charset=utf8"}
 
 	configs := []map[string]interface{}{map1, map2}
 	dbBase, err := NewDbBase(configs...)

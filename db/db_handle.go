@@ -58,7 +58,7 @@ func (h *DbHandle) Open(driverName string, maxConn, maxIdle int, maxLife int64, 
 	if maxIdle >= 0 {
 		h.master.SetMaxIdleConns(maxIdle)
 	}
-	h.master.SetConnMaxLifetime(time.Duration(maxLife))
+	h.master.SetConnMaxLifetime(time.Duration(maxLife) * time.Second)
 
 	// 从库配置
 	h.slaverCnt = len(configs) - 1
@@ -70,7 +70,7 @@ func (h *DbHandle) Open(driverName string, maxConn, maxIdle int, maxLife int64, 
 			}
 			t.SetMaxOpenConns(maxConn)
 			t.SetMaxIdleConns(maxIdle)
-			t.SetConnMaxLifetime(time.Duration(maxLife))
+			t.SetConnMaxLifetime(time.Duration(maxLife) * time.Second)
 
 			h.slavers = append(h.slavers, t)
 		}
