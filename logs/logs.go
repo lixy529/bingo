@@ -84,3 +84,45 @@ func Log(name string) Logger {
 
 	return nil
 }
+
+// GetLevelNameById 根据日志级别ID获取级别名称
+//   参数
+//     levelId: 日志级别ID
+//   返回
+//     日志级别名称
+func GetLevelNameById(levelId int) string {
+	if levelId == LevelDebug {
+		return DebugName
+	} else if levelId == LevelInfo {
+		return InfoName
+	} else if levelId == LevelWarn {
+		return WarnName
+	}  else if levelId == LevelError {
+		return ErrorName
+	}  else if levelId == LevelFatal {
+		return FatalName
+	}
+
+	return ""
+}
+
+// GetLevelIdByName 根据日志级别名称获取级别ID
+//   参数
+//     levelName: 日志级别名称
+//   返回
+//     日志级别ID
+func GetLevelIdByName(levelName string) int {
+	if levelName == DebugName {
+		return LevelDebug
+	} else if levelName == InfoName {
+		return LevelInfo
+	} else if levelName == WarnName {
+		return LevelWarn
+	}  else if levelName == ErrorName {
+		return LevelError
+	}  else if levelName == FatalName {
+		return LevelFatal
+	}
+
+	return -1
+}

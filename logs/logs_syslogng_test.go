@@ -41,7 +41,8 @@ func TestSockPool(t *testing.T) {
 	maxConns := 10
 	maxIdle := 5
 	idleTimeout := 3
-	p := NewSockPool(sockFile, maxConns, maxIdle, time.Duration(idleTimeout), true)
+	wait := true
+	p := NewSockPool(sockFile, maxConns, maxIdle, time.Duration(idleTimeout), wait)
 	if p == nil {
 		t.Error("NewSockPool error")
 		return
