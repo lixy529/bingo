@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	GlobalCfg *config.StConfig
+	GlobalCfg *config.Config
 	AppCfg    *AppConfig
 	AppRoot   string // 程序根目录
 )

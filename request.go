@@ -14,7 +14,7 @@ type Request struct {
 	r         *http.Request
 	getParam  map[string][]string
 	postParam map[string][]string
-	pathParam map[string]string
+	pathParam map[string][]string
 }
 
 func (req *Request) reSet(r *http.Request) {
@@ -131,11 +131,13 @@ func (req *Request) Port() int {
 //   返回
 //     路径，如: http://www.xxx.com:9090
 func (req *Request) Site() string {
-	site := req.Scheme() + "://" + req.Domain()
-	if req.Port() != 80 {
-		site = site + ":" + strconv.Itoa(req.Port())
+	scheme := req.Scheme()
+	port := req.Port()
+	site := scheme + "://" + req.Domain()
+	if port == 80 || port == 443 {
+		return site
 	}
-	return site
+	return site + ":" + strconv.Itoa(port)
 }
 
 // Method 返回请求的方法
@@ -368,7 +370,10 @@ func (req *Request) parsePostParam() {
 //   返回
 //     void
 func (req *Request) parsePathParam(param map[string]string) {
-	req.pathParam = param
+	req.pathParam = make(map[string][]string)
+	for k, v := range param {
+		req.pathParam[k] = []string{v}
+	}
 }
 
 // GetCookie 获取cookie

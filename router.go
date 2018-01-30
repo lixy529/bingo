@@ -26,11 +26,13 @@ type RouterInfo struct {
 
 // RouterTab 路由表
 type RouterTab struct {
-	fixedRouters   map[string]RouterInfo
-	regularRouters map[string]RouterInfo
-	autoRouters    map[string]RouterInfo
-	shellRouters   map[string]ShellFunc
+	fixedRouters   map[string]RouterInfo // 固定路由列表
+	regularRouters map[string]RouterInfo // 正则路由列表
+	autoRouters    map[string]RouterInfo // 自动路由列表
+	shellRouters   map[string]ShellFunc  // 脚本路由列表
 
+	maxPathCnt int           // 路由最大路径个数，比如/aa/bb/cc，则值为3
+	minPathCnt int           // 路由最小路径个数，不能小于2
 	reqTimeout time.Duration // 请求超时时间
 }
 
@@ -41,6 +43,8 @@ type RouterTab struct {
 //     路由表对象
 func NewRouterTab() *RouterTab {
 	rt := &RouterTab{}
+	rt.maxPathCnt = 0
+	rt.minPathCnt = 99999
 	return rt
 }
 
@@ -74,6 +78,9 @@ func (rt *RouterTab) AddFixed(pattern string, c ControllerInterface, method stri
 		rt.fixedRouters = make(map[string]RouterInfo)
 	}
 	pattern = strings.ToLower(strings.TrimRight(pattern, "/"))
+	if pattern == "" {
+		pattern = "/"
+	}
 	if len(args) > 0 {
 		ext := strings.Trim(args[0], "/")
 		if ext != "" {
@@ -81,6 +88,13 @@ func (rt *RouterTab) AddFixed(pattern string, c ControllerInterface, method stri
 		}
 	}
 	rt.fixedRouters[pattern] = routeInfo
+	cnt := rt.getPathCnt(pattern)
+	if rt.maxPathCnt < cnt {
+		rt.maxPathCnt = cnt
+	}
+	if cnt > 1 && rt.minPathCnt > cnt {
+		rt.minPathCnt = cnt
+	}
 }
 
 // AddRegular 添加正则路由，同一路径设置多次，后面会覆盖前面
@@ -164,12 +178,20 @@ func (rt *RouterTab) AddAuto(c ControllerInterface, args ...interface{}) {
 			if ext != "" {
 				pattern = "/" + strings.ToLower(ext) + pattern
 			}
+
 			rt.autoRouters[pattern] = routeInfo
+			cnt := rt.getPathCnt(pattern)
+			if rt.maxPathCnt < cnt {
+				rt.maxPathCnt = cnt
+			}
+			if cnt > 1 && rt.minPathCnt > cnt {
+				rt.minPathCnt = cnt
+			}
 		}
 	}
 }
 
-// ServeHTTP 实现http.Handler接口，路径优先级：固定路由 大于 自动路由 大于 正则路由
+// ServeHTTP 实现http.Handler接口，匹配路由顺序：固定路由 => 自动路由 => 正则路由
 //   参数
 //     w: ResponseWriter对象
 //     r: Request对象
@@ -211,20 +233,9 @@ func (rt *RouterTab) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var routeInfo RouterInfo
 	var param map[string]string
 	ok := false
-
-	// 路由匹配两次，第一精确匹配，第二次取前面两段匹配
-	// 暂时去掉两次匹配
-	//for i := 0; i < 2; i++ {
 	var urlPath string
 	urlPath = strings.ToLower(realPath)
-	/*if i == 0 {
-		urlPath = strings.ToLower(realPath)
-	} else {
-		urlPath, param = rt.getPatternAndParam(realPath)
-		if param == nil {
-			break
-		}
-	}*/
+	curPathCnt := rt.getPathCnt(urlPath)
 
 	// 固定路由
 	routeInfo, ok = rt.fixedRouters[urlPath]
@@ -243,7 +254,38 @@ func (rt *RouterTab) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		goto RUNNING
 	}
-	//}
+
+	// 全路径未匹配到
+	for i := rt.maxPathCnt - 1; i >= rt.minPathCnt; i-- {
+		if i > curPathCnt {
+			continue;
+		}
+		urlPath = rt.getPattern(urlPath, i)
+		if urlPath == "" {
+			break
+		}
+
+		// 固定路由
+		routeInfo, ok = rt.fixedRouters[urlPath]
+		if ok {
+			param = rt.getParam(realPath, i)
+			goto RUNNING
+		}
+
+		// 自动路由
+		routeInfo, ok = rt.autoRouters[urlPath]
+		if ok {
+			param = rt.getParam(realPath, i)
+			goto RUNNING
+		}
+
+		// 正则路由，正则路由是否区分大小要看正则表达如果写
+		routeInfo, ok = rt.regularMatch(realPath)
+		if ok {
+			param = rt.getParam(realPath, i)
+			goto RUNNING
+		}
+	}
 
 	accessLog(r, http.StatusNotFound)
 	http.NotFound(w, r)
@@ -448,6 +490,51 @@ func (rt *RouterTab) getPatternAndParam(path string) (string, map[string]string)
 	return pattern, param
 }
 
+// getPattern 根据path获取用于匹配的pattern
+// 比如url=/user/index/ver/3.0/id/10, cnt=2，则参数为ver=3.0 id=10
+//   参数：
+//     path: 原始的url
+//     cnt:  前面cnt段为路径
+//   返回：
+//     参数信息
+func (rt *RouterTab) getPattern(path string, cnt int) string {
+	if path == "" {
+		return ""
+	}
+
+	urlList := strings.Split(strings.TrimLeft(path, "/"), "/")
+	n := len(urlList)
+	if n < cnt {
+		return ""
+	}
+
+	return "/" + strings.Join(urlList[:cnt], "/")
+}
+
+// getParam 根据path获取参数
+// 比如url=/user/index/ver/3.0/id/10, cnt=2，则pattern为/user/index
+//   参数：
+//     path: 原始的url
+//     cnt:  前面cnt段为路径
+//   返回：
+//     pattern: 匹配串
+func (rt *RouterTab) getParam(path string, cnt int) map[string]string {
+	param := make(map[string]string)
+	urlList := strings.Split(strings.TrimLeft(path, "/"), "/")
+	paramList := urlList[cnt:]
+	n := len(paramList)
+	isEven := n%2 == 0
+	for i := 0; i < n; i += 2 {
+		if isEven || i < n-1 {
+			param[paramList[i]] = paramList[i+1]
+		} else {
+			param[paramList[i]] = ""
+		}
+	}
+
+	return param
+}
+
 // accessLog 写访问日志
 //   参数
 //     r:          http.Request
@@ -500,4 +587,16 @@ func (rt *RouterTab) matchShell(pattern string) ShellFunc {
 	}
 
 	return nil
+}
+
+// getPathCnt 获取路由段数
+// 比如 /aa/bb/cc，则返回 3
+//   参数
+//     pattern: 路由请求路径
+//   返回
+//     获取路由段数
+func (rt *RouterTab) getPathCnt(pattern string) int {
+	pList := strings.Split(pattern, "/")
+
+	return len(pList) - 1
 }

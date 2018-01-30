@@ -137,7 +137,7 @@ func (c *Controller) Show() {
 //     value值
 func (c *Controller) GetString(key string, def ...string) string {
 	if v, ok := c.Req.getParam[key]; ok {
-		return v[0]
+		return strings.TrimSpace(v[0])
 	}
 	if len(def) > 0 {
 		return def[0]
@@ -176,7 +176,7 @@ func (c *Controller) GetInt(key string, def ...int) (int, error) {
 		return def[0], nil
 	}
 
-	return strconv.Atoi(v[0])
+	return strconv.Atoi(strings.TrimSpace(v[0]))
 }
 
 // GetBool 返回bool型
@@ -188,7 +188,7 @@ func (c *Controller) GetInt(key string, def ...int) (int, error) {
 //     value值
 func (c *Controller) GetBool(key string, def ...bool) bool {
 	if v, ok := c.Req.getParam[key]; ok {
-		switch strings.ToUpper(v[0]) {
+		switch strings.ToUpper(strings.TrimSpace(v[0])) {
 		case "1", "T", "TRUE", "YES", "Y", "ON":
 			return true
 		default:
@@ -204,14 +204,18 @@ func (c *Controller) GetBool(key string, def ...bool) bool {
 }
 
 // GetAll 返回所有GET参数
-// 如果key对应多个值，则都返回
+// 如果key对应多个值，则都返回，只取第一个参数
 // c.GetAll()
 //   参数
 //     void
 //   返回
 //     所有GET参数
-func (c *Controller) GetAll() map[string][]string {
-	return c.Req.getParam
+func (c *Controller) GetAll() map[string]string {
+	param := make(map[string]string)
+	for k, v := range c.Req.getParam {
+		param[k] = v[0]
+	}
+	return param
 }
 
 // PostString 根据key获取对应的POST参数
@@ -224,7 +228,7 @@ func (c *Controller) GetAll() map[string][]string {
 //     value值
 func (c *Controller) PostString(key string, def ...string) string {
 	if v, ok := c.Req.postParam[key]; ok {
-		return v[0]
+		return strings.TrimSpace(v[0])
 	}
 	if len(def) > 0 {
 		return def[0]
@@ -263,7 +267,7 @@ func (c *Controller) PostInt(key string, def ...int) (int, error) {
 		return def[0], nil
 	}
 
-	return strconv.Atoi(v[0])
+	return strconv.Atoi(strings.TrimSpace(v[0]))
 }
 
 // PostBool 返回bool型
@@ -275,7 +279,7 @@ func (c *Controller) PostInt(key string, def ...int) (int, error) {
 //     value值
 func (c *Controller) PostBool(key string, def ...bool) bool {
 	if v, ok := c.Req.postParam[key]; ok {
-		switch strings.ToUpper(v[0]) {
+		switch strings.ToUpper(strings.TrimSpace(v[0])) {
 		case "1", "T", "TRUE", "YES", "Y", "ON":
 			return true
 		default:
@@ -290,15 +294,19 @@ func (c *Controller) PostBool(key string, def ...bool) bool {
 	}
 }
 
-// PostAll 返回所有GET参数
+// PostAll 返回所有POST参数，只取第一个参数
 // 如果key对应多个值，则都返回
-// c.GetAll()
+// c.PostAll()
 //   参数
 //     void
 //   返回
 //     所有POST参数
-func (c *Controller) PostAll() map[string][]string {
-	return c.Req.postParam
+func (c *Controller) PostAll() map[string]string {
+	param := make(map[string]string)
+	for k, v := range c.Req.postParam {
+		param[k] = v[0]
+	}
+	return param
 }
 
 // ParamString 根据key获取对应的PATH参数
@@ -310,7 +318,7 @@ func (c *Controller) PostAll() map[string][]string {
 //     value值
 func (c *Controller) ParamString(key string, def ...string) string {
 	if v, ok := c.Req.pathParam[key]; ok {
-		return v
+		return strings.TrimSpace(v[0])
 	}
 	def = append(def, "")
 	return def[0]
@@ -329,7 +337,7 @@ func (c *Controller) ParamInt(key string, def ...int) (int, error) {
 		return def[0], nil
 	}
 
-	return strconv.Atoi(v)
+	return strconv.Atoi(strings.TrimSpace(v[0]))
 }
 
 // ParamBool 返回bool型
@@ -341,7 +349,7 @@ func (c *Controller) ParamInt(key string, def ...int) (int, error) {
 //     value值
 func (c *Controller) ParamBool(key string, def ...bool) bool {
 	if v, ok := c.Req.pathParam[key]; ok {
-		switch strings.ToUpper(v) {
+		switch strings.ToUpper(strings.TrimSpace(v[0])) {
 		case "1", "T", "TRUE", "YES", "Y", "ON":
 			return true
 		default:
@@ -354,7 +362,7 @@ func (c *Controller) ParamBool(key string, def ...bool) bool {
 }
 
 // ParamAll 返回所有PATH参数
-// 如果key对应多个值，则都返回
+// 如果key对应多个值，则都返回，只取第一个参数
 // c.ParamAll()
 //   参数
 //     key: key值
@@ -362,11 +370,120 @@ func (c *Controller) ParamBool(key string, def ...bool) bool {
 //   返回
 //     所有PATH参数
 func (c *Controller) ParamAll() map[string]string {
-	return c.Req.pathParam
+	param := make(map[string]string)
+	for k, v := range c.Req.pathParam {
+		param[k] = v[0]
+	}
+	return param
+}
+
+// ReqString 根据key获取对应的post和get的参数
+// 优先级为post > get
+// 如果key对应多个值，则返回第一个值
+// c.ReqString("bb", "44")
+//   参数
+//     key: key值
+//     def: 默认值
+//   返回
+//     value值
+func (c *Controller) ReqString(key string, def ...string) string {
+	// POST
+	if v, ok := c.Req.postParam[key]; ok {
+		return strings.TrimSpace(v[0])
+	}
+
+	// GET
+	if v, ok := c.Req.getParam[key]; ok {
+		return strings.TrimSpace(v[0])
+	}
+
+	// Default
+	def = append(def, "")
+	return def[0]
+}
+
+// ReqInt 返回int型
+// 优先级为post > get
+// 如果key不存在，则返回默认值
+//   参数
+//     key: key值
+//     def: 默认值
+//   返回
+//     value值
+func (c *Controller) ReqInt(key string, def ...int) (int, error) {
+	// POST
+	if v, ok := c.Req.postParam[key]; ok && len(v) > 0 {
+		return strconv.Atoi(strings.TrimSpace(v[0]))
+	}
+
+	// GET
+	if v, ok := c.Req.getParam[key]; ok && len(v) > 0 {
+		return strconv.Atoi(strings.TrimSpace(v[0]))
+	}
+
+	// Default
+	def = append(def, 0)
+	return def[0], nil
+}
+
+// ReqBool 返回bool型
+// 优先级为post > get
+// 如果key不存在，则返回默认值
+//   参数
+//     key: key值
+//     def: 默认值
+//   返回
+//     value值
+func (c *Controller) ReqBool(key string, def ...bool) bool {
+	// POST
+	if v, ok := c.Req.postParam[key]; ok && len(v) > 0 {
+		switch strings.ToUpper(strings.TrimSpace(v[0])) {
+		case "1", "T", "TRUE", "YES", "Y", "ON":
+			return true
+		default:
+			return false
+		}
+	}
+
+	// GET
+	if v, ok := c.Req.getParam[key]; ok && len(v) > 0 {
+		switch strings.ToUpper(strings.TrimSpace(v[0])) {
+		case "1", "T", "TRUE", "YES", "Y", "ON":
+			return true
+		default:
+			return false
+		}
+	}
+
+	// Default
+	def = append(def, false)
+	return def[0]
+}
+
+// ReqAll 返回POST和GET所有参数，只取第一个参数
+// 如果GET和POST都有的参数，则保留POST
+// 如果key对应多个值，则都返回
+//   参数
+//     void
+//   返回
+//     所有POST参数
+func (c *Controller) ReqAll() map[string]string {
+	param := make(map[string]string)
+
+	// GET
+	for k, v := range c.Req.getParam {
+		param[k] = v[0]
+	}
+
+	// POST
+	for k, v := range c.Req.postParam {
+		param[k] = v[0]
+	}
+	return param
 }
 
 // VarString 根据key获取对应的所有类型的参数
-// 优先级为path > get > post
+// 优先级为path > post > get
 // 如果key对应多个值，则返回第一个值
 // c.VarString("bb", "44")
 //   参数
@@ -377,17 +494,17 @@ func (c *Controller) ParamAll() map[string]string {
 func (c *Controller) VarString(key string, def ...string) string {
 	// PATH
 	if v, ok := c.Req.pathParam[key]; ok {
-		return v
-	}
-
-	// GET
-	if v, ok := c.Req.getParam[key]; ok {
-		return v[0]
+		return strings.TrimSpace(v[0])
 	}
 
 	// POST
 	if v, ok := c.Req.postParam[key]; ok {
-		return v[0]
+		return strings.TrimSpace(v[0])
+	}
+
+	// GET
+	if v, ok := c.Req.getParam[key]; ok {
+		return strings.TrimSpace(v[0])
 	}
 
 	// Default
@@ -396,7 +513,7 @@ func (c *Controller) VarString(key string, def ...string) string {
 }
 
 // VarInt 返回int型
-// 优先级为path > get > post
+// 优先级为path > post > get
 // 如果key不存在，则返回默认值
 //   参数
 //     key: key值
@@ -406,17 +523,17 @@ func (c *Controller) VarString(key string, def ...string) string {
 func (c *Controller) VarInt(key string, def ...int) (int, error) {
 	// PATH
 	if v, ok := c.Req.pathParam[key]; ok {
-		return strconv.Atoi(v)
-	}
-
-	// GET
-	if v, ok := c.Req.getParam[key]; ok && len(v) > 0 {
-		return strconv.Atoi(v[0])
+		return strconv.Atoi(strings.TrimSpace(v[0]))
 	}
 
 	// POST
 	if v, ok := c.Req.postParam[key]; ok && len(v) > 0 {
-		return strconv.Atoi(v[0])
+		return strconv.Atoi(strings.TrimSpace(v[0]))
+	}
+
+	// GET
+	if v, ok := c.Req.getParam[key]; ok && len(v) > 0 {
+		return strconv.Atoi(strings.TrimSpace(v[0]))
 	}
 
 	// Default
@@ -425,7 +542,7 @@ func (c *Controller) VarInt(key string, def ...int) (int, error) {
 }
 
 // VarBool 返回bool型
-// 优先级为path > get > post
+// 优先级为path > post > get
 // 如果key不存在，则返回默认值
 //   参数
 //     key: key值
@@ -435,17 +552,7 @@ func (c *Controller) VarInt(key string, def ...int) (int, error) {
 func (c *Controller) VarBool(key string, def ...bool) bool {
 	// PATH
 	if v, ok := c.Req.pathParam[key]; ok {
-		switch strings.ToUpper(v) {
-		case "1", "T", "TRUE", "YES", "Y", "ON":
-			return true
-		default:
-			return false
-		}
-	}
-
-	// GET
-	if v, ok := c.Req.getParam[key]; ok && len(v) > 0 {
-		switch strings.ToUpper(v[0]) {
+		switch strings.ToUpper(strings.TrimSpace(v[0])) {
 		case "1", "T", "TRUE", "YES", "Y", "ON":
 			return true
 		default:
@@ -455,7 +562,17 @@ func (c *Controller) VarBool(key string, def ...bool) bool {
 
 	// POST
 	if v, ok := c.Req.postParam[key]; ok && len(v) > 0 {
-		switch strings.ToUpper(v[0]) {
+		switch strings.ToUpper(strings.TrimSpace(v[0])) {
+		case "1", "T", "TRUE", "YES", "Y", "ON":
+			return true
+		default:
+			return false
+		}
+	}
+
+	// GET
+	if v, ok := c.Req.getParam[key]; ok && len(v) > 0 {
+		switch strings.ToUpper(strings.TrimSpace(v[0])) {
 		case "1", "T", "TRUE", "YES", "Y", "ON":
 			return true
 		default:
