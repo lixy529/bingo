@@ -51,6 +51,10 @@ func NewServer(addr string, handler http.Handler, readTimeout, writeTimeout, shu
 		writeTimeout = DEFAULT_WRITE_TIMEOUT
 	}
 
+	if shutTimeout <= 0 {
+		shutTimeout = DEFAULT_SHUT_TIMEOUT
+	}
+
 	return &Server{
 		httpServer: &http.Server{
 			Addr:    addr,
