@@ -301,7 +301,7 @@ func HttpQueryToMap(s string) (map[string]string, error) {
 		t := strings.Split(v, "=")
 		key, err := url.QueryUnescape(t[0])
 		if err != nil {
-			return nil, err
+			return m, err
 		}
 
 		if len(t) == 1 {
@@ -309,7 +309,7 @@ func HttpQueryToMap(s string) (map[string]string, error) {
 		} else if len(t) >= 2 {
 			val, err := url.QueryUnescape(t[1])
 			if err != nil {
-				return nil, err
+				return m, err
 			}
 			m[key] = val
 		}
