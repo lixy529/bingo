@@ -4,7 +4,7 @@
 package logs
 
 import (
-	"github.com/bingo/utils"
+	"github.com/lixy529/bingo/utils"
 	"bytes"
 	"encoding/json"
 	"errors"

@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"github.com/bingo/session"
+	"github.com/lixy529/bingo/session"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -15,7 +15,7 @@ import (
 	"strings"
 	"bytes"
 	"encoding/json"
-	"github.com/bingo/utils"
+	"github.com/lixy529/bingo/utils"
 	"html/template"
 	"encoding/xml"
 )

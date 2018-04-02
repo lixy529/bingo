@@ -4,7 +4,7 @@
 package bingo
 
 import (
-	"github.com/bingo/utils"
+	"github.com/lixy529/bingo/utils"
 	"net/http"
 	"path"
 	"path/filepath"

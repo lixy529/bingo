@@ -1,9 +1,9 @@
 package routers
 
 import (
-	"github.com/bingo"
-	"github.com/bingo/demo/controllers"
-	"github.com/bingo/demo/controllers/api"
+	"github.com/lixy529/bingo"
+	"github.com/lixy529/bingo/demo/controllers"
+	"github.com/lixy529/bingo/demo/controllers/api"
 )
 
 func init() {

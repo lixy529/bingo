@@ -4,9 +4,9 @@
 package main
 
 import (
-	"github.com/bingo"
-	_ "github.com/bingo/demo/routers"
-	_ "github.com/bingo/session/memcache"
+	"github.com/lixy529/bingo"
+	_ "github.com/lixy529/bingo/demo/routers"
+	_ "github.com/lixy529/bingo/session/memcache"
 )
 
 func main() {

@@ -5,7 +5,7 @@ package logs
 
 import (
 	"fmt"
-	"github.com/bingo/utils"
+	"github.com/lixy529/bingo/utils"
 	"sync"
 	"testing"
 	"time"

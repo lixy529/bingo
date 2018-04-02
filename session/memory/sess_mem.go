@@ -4,7 +4,7 @@
 package memory
 
 import (
-	"github.com/bingo/session"
+	"github.com/lixy529/bingo/session"
 	"sync"
 	"time"
 )

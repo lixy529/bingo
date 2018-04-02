@@ -4,7 +4,7 @@
 package controllers
 
 import (
-	"github.com/bingo"
+	"github.com/lixy529/bingo"
 )
 
 type BaseController struct {

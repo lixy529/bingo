@@ -4,7 +4,7 @@
 package models
 
 import (
-	"github.com/bingo"
+	"github.com/lixy529/bingo"
 	_ "github.com/go-sql-driver/mysql"
 )
 

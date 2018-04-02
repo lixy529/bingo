@@ -24,7 +24,7 @@ type StInfo struct {
 
 // TestTemplate
 func TestTemplate(t *testing.T) {
-	tp := NewTemplate("/Users/lixiaoya/goyard/goc2p/src/github.com/bingo/demo/views", ".html")
+	tp := NewTemplate("/Users/lixiaoya/goyard/goc2p/src/github.com/lixy529/bingo/demo/views", ".html")
 	if tp == nil {
 		t.Errorf("Template is nil")
 		return

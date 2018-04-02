@@ -5,9 +5,9 @@ package bingo
 
 import (
 	"fmt"
-	"github.com/bingo/gracefcgi"
-	"github.com/bingo/gracehttp"
-	"github.com/bingo/utils"
+	"github.com/lixy529/bingo/gracefcgi"
+	"github.com/lixy529/bingo/gracehttp"
+	"github.com/lixy529/bingo/utils"
 	"log"
 	"os"
 	"time"

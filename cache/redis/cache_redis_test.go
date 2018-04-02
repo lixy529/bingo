@@ -4,7 +4,7 @@
 package redis
 
 import (
-	"github.com/bingo/cache"
+	"github.com/lixy529/bingo/cache"
 	"fmt"
 	"testing"
 	"encoding/json"

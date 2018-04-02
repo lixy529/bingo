@@ -4,8 +4,8 @@
 package controllers
 
 import (
-	"github.com/bingo"
-	"github.com/bingo/demo/models"
+	"github.com/lixy529/bingo"
+	"github.com/lixy529/bingo/demo/models"
 	"log"
 	"time"
 )

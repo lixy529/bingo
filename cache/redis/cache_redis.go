@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"github.com/bingo/cache"
+	"github.com/lixy529/bingo/cache"
 	"strconv"
 	"time"
 )

@@ -9,8 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bradfitz/gomemcache/memcache"
-	"github.com/bingo/session"
-	"github.com/bingo/utils"
+	"github.com/lixy529/bingo/session"
+	"github.com/lixy529/bingo/utils"
 	"strings"
 	"sync"
 )

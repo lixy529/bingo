@@ -1,7 +1,7 @@
 // 带包名的自动路由测试
 package api
 
-import "github.com/bingo/demo/controllers"
+import "github.com/lixy529/bingo/demo/controllers"
 
 type UserController struct {
 	controllers.BaseController

@@ -7,7 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/bingo/utils"
+	"github.com/lixy529/bingo/utils"
 	"log"
 	"net"
 	"net/http"

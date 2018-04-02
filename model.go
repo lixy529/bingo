@@ -6,8 +6,8 @@ package bingo
 import (
 	"database/sql"
 	"errors"
-	"github.com/bingo/cache"
-	"github.com/bingo/db"
+	"github.com/lixy529/bingo/cache"
+	"github.com/lixy529/bingo/db"
 )
 
 type Model struct {
