@@ -57,7 +57,7 @@ func DecodeImg(imgFile string, imgType string) (image.Image, error) {
 	} else if iType == "GIF" {
 		img, err = gif.Decode(f)
 	} else {
-		return nil, fmt.Errorf("Image type [%s] is not supported", imgType[0])
+		return nil, fmt.Errorf("Image type [%s] is not supported", imgType)
 	}
 	if err != nil {
 		return nil, err

@@ -43,7 +43,7 @@ func TestGobEncode(t *testing.T) {
 		t.Errorf("GobDecode failed. err: %s.", err.Error())
 		return
 	} else if *infoNew != str {
-		t.Errorf("GobDecode failed. Got %s, expected %s.", infoNew, str)
+		t.Errorf("GobDecode failed. Got %s, expected %s.", *infoNew, str)
 		return
 	}
 }
