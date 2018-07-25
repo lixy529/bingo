@@ -11,8 +11,6 @@ import (
 	"log"
 	"os"
 	"time"
-	"io/ioutil"
-	"strconv"
 )
 
 const (
@@ -148,29 +146,9 @@ func (app *App) beforeRun() {
 
 // AfterRun  运行run后销毁函数
 func (app *App) afterRun() {
-	// 关闭数据库连接
-	if GlobalDb != nil {
-		GlobalDb.Close()
-	}
-
-	// 关闭日志
-	if Flogger != nil {
-		Flogger.Destroy()
-	}
-
-	// 删除pid文件
-	if !isShell {
-		fi, err := os.Open(AppCfg.ServerCfg.PidFile)
-		if err == nil {
-			defer fi.Close()
-			fd, err := ioutil.ReadAll(fi)
-			if err == nil {
-				myPid := strconv.Itoa(os.Getpid())
-				if myPid == string(fd) {
-					os.Remove(AppCfg.ServerCfg.PidFile)
-				}
-			}
-		}
+	// 资源释放
+	for _, f := range unInits {
+		f()
 	}
 
 	return

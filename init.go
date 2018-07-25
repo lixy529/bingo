@@ -21,6 +21,7 @@ import (
 )
 
 type initfunc func() error
+type unInitfunc func()
 
 var (
 	GlobalSession *session.Manager
@@ -30,6 +31,7 @@ var (
 	GTemplate     *Template
 	GLang         *lang.Lang
 	inits         = make([]initfunc, 0)
+	unInits       = make([]unInitfunc, 0)
 )
 
 // init 添加需要初始化函数
@@ -38,6 +40,7 @@ var (
 //   返回
 //     void
 func init() {
+	// 初始化
 	AddInitFunc(initFrameLog)
 	AddInitFunc(initPidFile)
 	AddInitFunc(initBusLog)
@@ -47,15 +50,29 @@ func init() {
 	AddInitFunc(initViews)
 	AddInitFunc(initLang)
 	AddInitFunc(initGzip)
+
+	// 反初始化
+	AddUnInitFunc(unInitDb)
+	AddUnInitFunc(unInitFrameLog)
+	AddUnInitFunc(unInitPidFile)
 }
 
 // AddInitFunc 添加init函数
 //   参数
 //     f: 初始化函数
 //   返回
-//
+//     void
 func AddInitFunc(f initfunc) {
 	inits = append(inits, f)
+}
+
+// AddUnInitFunc 添加uninit函数
+//   参数
+//     f: 初始化函数
+//   返回
+//     void
+func AddUnInitFunc(f unInitfunc) {
+	unInits = append(unInits, f)
 }
 
 // initPidFile 生成pid文件
@@ -262,4 +279,47 @@ func initGzip() error {
 	gzipMinLen = AppCfg.ServerCfg.GzipMinLen
 
 	return nil
+}
+
+// unInitDb 关闭数据库连接
+//   参数
+//     void
+//   返回
+//     void
+func unInitDb() {
+	if GlobalDb != nil {
+		GlobalDb.Close()
+	}
+}
+
+// unInitFrameLog 关闭日志
+//   参数
+//     void
+//   返回
+//     void
+func unInitFrameLog() {
+	if Flogger != nil {
+		Flogger.Destroy()
+	}
+}
+
+// unInitPidFile 删除pid文件
+//   参数
+//     void
+//   返回
+//     void
+func unInitPidFile() {
+	if !isShell {
+		fi, err := os.Open(AppCfg.ServerCfg.PidFile)
+		if err == nil {
+			defer fi.Close()
+			fd, err := ioutil.ReadAll(fi)
+			if err == nil {
+				myPid := strconv.Itoa(os.Getpid())
+				if myPid == string(fd) {
+					os.Remove(AppCfg.ServerCfg.PidFile)
+				}
+			}
+		}
+	}
 }
