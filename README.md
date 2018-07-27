@@ -21,6 +21,7 @@ demo
 demo代码
 
 环境变量里设置APPROOT为demo的目录，就可运行demo
+如果APPROOT和GOPATH目录相同就不用设置APPROOT
 
 ### 环境变量配置demo实例：
 
