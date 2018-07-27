@@ -865,7 +865,7 @@ func (c *Controller) WriteBinary(data []byte, contentType string) {
 //   返回
 //
 func (c *Controller) Redirect(urlStr string, status ...int) {
-	code := 302
+	code := http.StatusFound
 	if len(status) > 0 {
 		code = status[0]
 	}

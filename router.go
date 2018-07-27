@@ -288,8 +288,11 @@ func (rt *RouterTab) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessLog(r, http.StatusNotFound)
-	http.NotFound(w, r)
-	//httpStatus = http.StatusNotFound
+	if AppCfg.ServerCfg.Url404 != "" {
+		http.Redirect(w, r, AppCfg.ServerCfg.Url404, http.StatusFound)
+	} else {
+		http.NotFound(w, r)
+	}
 	return
 
 RUNNING:
@@ -297,9 +300,14 @@ RUNNING:
 	vc := reflect.New(runRouter)
 	objController, ok := vc.Interface().(ControllerInterface)
 	if !ok {
+		// 500
 		Flogger.Errorf("path[%s] err[controller is not ControllerInterface]", r.URL.Path)
 		accessLog(r, http.StatusInternalServerError)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError) // 500
+		if AppCfg.ServerCfg.Url500 != "" {
+			http.Redirect(w, r, AppCfg.ServerCfg.Url500, http.StatusFound)
+		} else {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 	}
 
 	runMethod := routeInfo.method
@@ -356,11 +364,21 @@ RUNNING:
 	select {
 	case <-chanRes:
 		if httpStatus == http.StatusBadGateway {
+			// 502
 			accessLog(r, httpStatus)
-			http.Error(w, "Bad Gateway", httpStatus) // 502
+			if AppCfg.ServerCfg.Url502 != "" {
+				http.Redirect(w, r, AppCfg.ServerCfg.Url502, http.StatusFound)
+			} else {
+				http.Error(w, "Bad Gateway", httpStatus)
+			}
 		} else if httpStatus == http.StatusInternalServerError {
+			// 500
 			accessLog(r, httpStatus)
-			http.Error(w, "Internal Server Error", httpStatus) // 500
+			if AppCfg.ServerCfg.Url500 != "" {
+				http.Redirect(w, r, AppCfg.ServerCfg.Url500, http.StatusFound)
+			} else {
+				http.Error(w, "Internal Server Error", httpStatus)
+			}
 		}
 	}
 	if httpStatus == http.StatusOK {

@@ -78,6 +78,10 @@ type ServerConfig struct {
 
 	ForwardName string // 有代理转发时需要设置，获取真实的客户端IP
 	ForwardRev  bool   // true-按倒序排，false-按顺序排
+
+	Url404 string // 404跳转url地址
+	Url500 string // 500跳转url地址
+	Url502 string // 502跳转url地址
 }
 
 // WebConfig web相关配置
@@ -209,6 +213,10 @@ func newAppConfig() (*AppConfig, error) {
 
 			ForwardName: GlobalCfg.GetString("server", "forward_name", ""),
 			ForwardRev:  GlobalCfg.GetBool("server", "forward_rev", true),
+
+			Url404: GlobalCfg.GetString("server", "url_404", ""),
+			Url500: GlobalCfg.GetString("server", "url_500", ""),
+			Url502: GlobalCfg.GetString("server", "url_502", ""),
 		},
 
 		WebCfg: WebConfig{
