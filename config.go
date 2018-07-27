@@ -153,16 +153,20 @@ type MqConfig struct {
 }
 
 // newAppConfig 解析配置文件
-// 配置先从参数（-c config file）取，如果没有传配置文件参数则从环境变量取（APPCONFIG），默认为app.conf
+// 配置文件从环境变量取（APPCONFIG），如果未配置默认为app.conf
 //   参数
 //     void
 //   返回
 //     成功时返回AppConfig实例化对象，失败时返回错误信息
 func newAppConfig() (*AppConfig, error) {
 	// APPROOT
-	AppRoot = os.Getenv("APPROOT") // 环境变量里必须添加APPROOT
-	if len(AppRoot) == 0 {
-		return nil, errors.New("config: Please set the 'APPROOT' environment variable")
+	// 环境变量里添加APPROOT，如果没有再取GOPATH路径
+	AppRoot = os.Getenv("APPROOT")
+	if AppRoot == "" {
+		AppRoot = os.Getenv("GOPATH")
+		if AppRoot == "" {
+			return nil, errors.New("config: Please set the 'APPROOT' or 'GOPATH' environment variable")
+		}
 	}
 
 	// 配置文件
@@ -551,8 +555,8 @@ func getMqConfigs() map[string]*MqConfig {
 *
  */
 func (ac *AppConfig) GetMqConfig(mqName string) map[string]interface{} {
-	if config, exists := ac.MqConfigs[mqName]; exists {
-		return config.cnfdata
+	if cfg, exists := ac.MqConfigs[mqName]; exists {
+		return cfg.cnfdata
 	}
 	return nil
 }
