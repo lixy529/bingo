@@ -49,7 +49,7 @@ func StrToTimeStamp(timeStr string, timeFmt ...string) int64 {
 	return theTime.Unix()
 }
 
-// TimeStampToStr 日期字符串转时间戳
+// TimeStampToStr 时间戳转日期字符串
 //   参数
 //     args: 可以传如下参数
 //       时间戳: 小于等于0时取当前时间，类型为int64

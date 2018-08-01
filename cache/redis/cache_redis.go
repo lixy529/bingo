@@ -7,7 +7,7 @@ import (
 	json "github.com/json-iterator/go"
 	"errors"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/lixy529/bingo/cache"
 	"strconv"
 	"time"
