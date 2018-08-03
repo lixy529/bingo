@@ -10,6 +10,7 @@ import (
 	"github.com/lixy529/bingo/cache"
 	"github.com/lixy529/bingo/cache/memcache"
 	"github.com/lixy529/bingo/cache/redis"
+	"github.com/lixy529/bingo/cache/codis"
 	"github.com/lixy529/bingo/db"
 	"github.com/lixy529/bingo/lang"
 	"github.com/lixy529/bingo/logs"
@@ -161,6 +162,8 @@ func initCache() error {
 			cache.Adapters[cfg.cacheName] = redis.NewRedisCache()
 		} else if cfg.cacheType == "memcache" {
 			cache.Adapters[cfg.cacheName] = memcache.NewMemcCache()
+		}  else if cfg.cacheType == "codis" {
+			cache.Adapters[cfg.cacheName] = codis.NewCodisCache()
 		} else {
 			return fmt.Errorf("Cache:  Adapter type [%s] isn't redis or memcache", cfg.cacheName)
 		}
