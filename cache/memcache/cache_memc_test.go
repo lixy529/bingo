@@ -12,7 +12,7 @@ import (
 func TestMemcCache(t *testing.T) {
 	var err error
 	adapter := &MemcCache{}
-	err = adapter.Init(`{"addr":"127.0.0.1:11211","maxIdle":"10","ioTimeOut":"1","prefix":"le_"}`)
+	err = adapter.Init(`{"addr":"127.0.0.1:11211","maxIdle":"10","ioTimeOut":"300","prefix":"le_"}`)
 	if err != nil {
 		t.Errorf("Memc Init failed. err: %s.", err.Error())
 		return
@@ -229,7 +229,7 @@ type User struct {
 func TestStruct(t *testing.T) {
 	var err error
 	adapter := &MemcCache{}
-	err = adapter.Init(`{"addr":"127.0.0.1:11211","maxIdle":"10","ioTimeOut":"1","prefix":"le_","serializer":"json","compressType":"zlib","compressThreshold":"0"}`)
+	err = adapter.Init(`{"addr":"127.0.0.1:11211","maxIdle":"10","ioTimeOut":"300","prefix":"le_","serializer":"json","compressType":"zlib","compressThreshold":"0"}`)
 	if err != nil {
 		t.Errorf("Memc Init failed. err: %s.", err.Error())
 		return
@@ -298,7 +298,7 @@ func TestStruct2(t *testing.T) {
 func TestMemcEncode(t *testing.T) {
 	var err error
 	adapter := &MemcCache{}
-	err = adapter.Init(`{"addr":"127.0.0.1:11211","maxIdle":"10","ioTimeOut":"1","prefix":"le_","serializer":"json","compressType":"zlib","compressThreshold":"0","encodeKey":"abcdefghij123456"}`)
+	err = adapter.Init(`{"addr":"127.0.0.1:11211","maxIdle":"10","ioTimeOut":"300","prefix":"le_","serializer":"json","compressType":"zlib","compressThreshold":"0","encodeKey":"abcdefghij123456"}`)
 	if err != nil {
 		t.Errorf("Memc Init failed. err: %s.", err.Error())
 		return
@@ -412,7 +412,7 @@ func (this *Item)UnmarshalJSON(data []byte) error {
 func TestMemcIJson(t *testing.T) {
 	var err error
 	adapter := &MemcCache{}
-	err = adapter.Init(`{"addr":"127.0.0.1:11211","maxIdle":"10","ioTimeOut":"1","prefix":"le_","serializer":"json","compressType":"zlib","compressThreshold":"0","encodeKey":"abcdefghij123456"}`)
+	err = adapter.Init(`{"addr":"127.0.0.1:11211","maxIdle":"10","ioTimeOut":"300","prefix":"le_","serializer":"json","compressType":"zlib","compressThreshold":"0","encodeKey":"abcdefghij123456"}`)
 	if err != nil {
 		t.Errorf("Memc Init failed. err: %s.", err.Error())
 		return

@@ -32,7 +32,7 @@ type MemcCache struct {
 	conn      *memcache.Client
 	connCfg   []string
 	maxIdle   int           // 最大空闲连接数，默认为2，如果配置值小于1则使用默认值
-	ioTimeOut time.Duration // io超时时间，默认为100毫秒, 0不限制
+	ioTimeOut time.Duration // io超时时间，默认为100毫秒，传0为默认时间，单位毫秒
 	prefix    string        // key前缀，如果配置里有，则所有key前自动添加此前缀
 
 	serializer        string // 序列化，目前只支持json
@@ -49,7 +49,7 @@ func NewMemcCache() cache.Cache {
 
 // connect 连接memcache
 //   参数
-//
+//     void
 //   返回
 //     成功返回nil，失败返回错误信息
 func (mc *MemcCache) connect() error {
@@ -67,7 +67,7 @@ func (mc *MemcCache) connect() error {
 	}
 
 	if mc.ioTimeOut >= 0 {
-		mc.conn.Timeout = mc.ioTimeOut * time.Second
+		mc.conn.Timeout = mc.ioTimeOut * time.Millisecond
 	}
 
 	return nil
