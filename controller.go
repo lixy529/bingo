@@ -267,11 +267,15 @@ func (c *Controller) PostStrings(key string, def ...[]string) []string {
 //     value值
 func (c *Controller) PostInt(key string, def ...int) (int, error) {
 	v, _ := c.Req.postParam[key]
-	if len(v) == 0 && len(def) > 0 {
+	if len(v) > 0 {
+		return strconv.Atoi(strings.TrimSpace(v[0]))
+	}
+
+	if len(def) > 0 {
 		return def[0], nil
 	}
 
-	return strconv.Atoi(strings.TrimSpace(v[0]))
+	return 0, nil
 }
 
 // PostBool 返回bool型
