@@ -9,8 +9,9 @@ import (
 	"io/ioutil"
 	"github.com/lixy529/bingo/cache"
 	"github.com/lixy529/bingo/cache/memcache"
-	"github.com/lixy529/bingo/cache/redis"
-	"github.com/lixy529/bingo/cache/codis"
+	"github.com/lixy529/bingo/cache/redism"
+	"github.com/lixy529/bingo/cache/redisc"
+	"github.com/lixy529/bingo/cache/redisd"
 	"github.com/lixy529/bingo/db"
 	"github.com/lixy529/bingo/lang"
 	"github.com/lixy529/bingo/logs"
@@ -158,12 +159,14 @@ func initCache() error {
 			return fmt.Errorf("Cache: Add adapter [%s] is exists", cfg.cacheName)
 		}
 
-		if cfg.cacheType == "redis" {
-			cache.Adapters[cfg.cacheName] = redis.NewRedisCache()
-		} else if cfg.cacheType == "memcache" {
+		if cfg.cacheType == "memcache" {
 			cache.Adapters[cfg.cacheName] = memcache.NewMemcCache()
-		}  else if cfg.cacheType == "codis" {
-			cache.Adapters[cfg.cacheName] = codis.NewCodisCache()
+		} else if cfg.cacheType == "redisc" {
+			cache.Adapters[cfg.cacheName] = redisc.NewRediscCache()
+		} else if cfg.cacheType == "redisd" {
+			cache.Adapters[cfg.cacheName] = redisd.NewRedisdCache()
+		} else if cfg.cacheType == "redism" {
+			cache.Adapters[cfg.cacheName] = redism.NewRedismCache()
 		} else {
 			return fmt.Errorf("Cache:  Adapter type [%s] isn't redis or memcache", cfg.cacheName)
 		}

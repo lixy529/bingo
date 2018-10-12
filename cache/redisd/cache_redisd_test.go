@@ -1,19 +1,21 @@
 // redis adapter测试
 //   变更历史
 //     2017-02-20  lixiaoya  新建
-package codis
+package redisd
 
 import (
-	"github.com/lixy529/bingo/cache"
-	"fmt"
 	"testing"
+	"fmt"
 	"encoding/json"
+	"time"
 )
 
-func TestCodisCache(t *testing.T) {
+var gConfig = `{"addr":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","dialTimeout":"5","readTimeout":"1","writeTimeout":"1","poolSize":"100","minIdleConns":"10","maxConnAge":"3600","poolTimeout":"1","idleTimeout":"300","prefix":"le_"}`
+
+func TestRedisdCache(t *testing.T) {
 	var err error
-	adapter := &CodisCache{}
-	err = adapter.Init(`{"conns":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","maxIdle":"4","maxActive":"10","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	adapter := &RedisdCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
 		t.Errorf("Codis Init failed. err: %s.", err.Error())
 		return
@@ -109,69 +111,50 @@ func TestCodisCache(t *testing.T) {
 		t.Errorf("Codis Get failed. err: %s.", err.Error())
 		return
 	} else if v33 != v3 {
-		t.Errorf("Codis Get failed. Got %f, expected %f.", v33, v3)
+		t.Errorf("Redisd Get failed. Got %f, expected %f.", v33, v3)
 		return
 	}
 
 	//////////////////////////Incr、Decr测试////////////////////////////
-	k4 := "k4"
-	v4 := "100"
-	err = adapter.Set(k4, v4, 30)
-	if err != nil {
-		t.Errorf("Codis Set failed. err: %s.", err.Error())
-		return
-	}
-
-	var v44 string
-	err, _ = adapter.Get(k4, &v44)
-	if err != nil {
-		t.Errorf("Codis Get failed. err: %s.", err.Error())
-		return
-	} else if v44 != v4 {
-		t.Errorf("Codis Get failed. Got %s, expected %s.", v44, v4)
-		return
-	}
-
-	//////////
 	k5 := "k5"
 	v5 := 100
 	err = adapter.Set(k5, v5, 30)
 	if err != nil {
-		t.Errorf("Codis Set failed. err: %s.", err.Error())
+		t.Errorf("Redisd Set failed. err: %s.", err.Error())
 		return
 	}
 
 	var v55 int
 	err, _ = adapter.Get(k5, &v55)
 	if err != nil {
-		t.Errorf("Codis Get failed. err: %s.", err.Error())
+		t.Errorf("Redisd Get failed. err: %s.", err.Error())
 		return
 	} else if v55 != v5 {
-		t.Errorf("Codis Get failed. Got %d, expected %d.", v55, v5)
+		t.Errorf("Redisd Get failed. Got %d, expected %d.", v55, v5)
 		return
 	}
 
 	newVal5, _ := adapter.Incr(k5)
 	if newVal5 != 101 {
-		t.Errorf("Codis Incr failed. Got %d, expected %d.", newVal5, 101)
+		t.Errorf("Redisd Incr failed. Got %d, expected %d.", newVal5, 101)
 		return
 	}
 
 	newVal5, _ = adapter.Decr(k5)
 	if newVal5 != 100 {
-		t.Errorf("Codis Incr failed. Got %d, expected %d.", newVal5, 100)
+		t.Errorf("Redisd Incr failed. Got %d, expected %d.", newVal5, 100)
 		return
 	}
 
 	newVal5, _ = adapter.Incr(k5, 10)
 	if newVal5 != 110 {
-		t.Errorf("Codis Incr failed. Got %d, expected %d.", newVal5, 110)
+		t.Errorf("Redisd Incr failed. Got %d, expected %d.", newVal5, 110)
 		return
 	}
 
 	newVal5, _ = adapter.Decr(k5, 10)
 	if newVal5 != 100 {
-		t.Errorf("Codis Incr failed. Got %d, expected %d.", newVal5, 100)
+		t.Errorf("Redisd Incr failed. Got %d, expected %d.", newVal5, 100)
 		return
 	}
 
@@ -184,17 +167,17 @@ func TestCodisCache(t *testing.T) {
 	r, err := adapter.HSet(k6, f6, v6, 60)
 	fmt.Println(r)
 	if err != nil {
-		t.Errorf("Codis HSet failed. err: %s.", err.Error())
+		t.Errorf("Redisd HSet failed. err: %s.", err.Error())
 		return
 	}
 
 	var v66 string
 	err, _ = adapter.HGet(k6, f6, &v66)
 	if err != nil {
-		t.Errorf("Codis HGet failed. err: %s.", err.Error())
+		t.Errorf("Redisd HGet failed. err: %s.", err.Error())
 		return
 	} else if v66 != v6 {
-		t.Errorf("Codis HGet failed. Got %s, expected %s.", v66, v6)
+		t.Errorf("Redisd HGet failed. Got %s, expected %s.", v66, v6)
 		return
 	}
 
@@ -202,13 +185,13 @@ func TestCodisCache(t *testing.T) {
 	fmt.Println("=== HGetAll Begin ===")
 	v77, err := adapter.HGetAll(k6)
 	if err != nil {
-		t.Errorf("Codis HGetAll failed. err: %s.", err.Error())
+		t.Errorf("Redisd HGetAll failed. err: %s.", err.Error())
 		return
 	}
 	for k, v := range v77 {
 		var val string
 		//json.Unmarshal(v.([]byte), &val)
-		val = string(v.([]byte))
+		val = v.(string)
 		fmt.Println(k, val)
 	}
 	fmt.Println("=== HGetAll End ===")
@@ -217,7 +200,7 @@ func TestCodisCache(t *testing.T) {
 	fmt.Println("=== HMGet Begin ===")
 	v99, err := adapter.HMGet(k6, "google", "baidu", "le")
 	if err != nil {
-		t.Errorf("Codis HMGet failed. err: %s.", err.Error())
+		t.Errorf("Redisd HMGet failed. err: %s.", err.Error())
 		return
 	}
 	for k, v := range v99 {
@@ -227,7 +210,7 @@ func TestCodisCache(t *testing.T) {
 		}
 		var val string
 		//json.Unmarshal(v.([]byte), &val)
-		val = string(v.([]byte))
+		val = v.(string)
 		fmt.Println(k, val)
 	}
 	fmt.Println("=== HMGet End ===")
@@ -235,7 +218,7 @@ func TestCodisCache(t *testing.T) {
 	// HVals
 	v88, err := adapter.HVals(k6)
 	if err != nil {
-		t.Errorf("Codis HVals failed. err: %s.", err.Error())
+		t.Errorf("Redisd HVals failed. err: %s.", err.Error())
 		return
 	}
 	for _, v := range v88 {
@@ -247,25 +230,25 @@ func TestCodisCache(t *testing.T) {
 
 	err = adapter.HDel(k6, f6, "baidu")
 	if err != nil {
-		t.Errorf("Codis HDel failed. err: %s.", err.Error())
+		t.Errorf("Redisd HDel failed. err: %s.", err.Error())
 		return
 	}
 
 	////////////////////////ClearAll测试////////////////////////////
 	//err = adapter.ClearAll()
 	//if err != nil {
-	//	t.Errorf("Codis ClearAll failed. err: %s.", err.Error())
+	//	t.Errorf("Redisd ClearAll failed. err: %s.", err.Error())
 	//	return
 	//}
 }
 
 // TestRedisMulti
-func TestCodisMulti(t *testing.T) {
+func TestRedisdMulti(t *testing.T) {
 	var err error
-	adapter := &CodisCache{}
-	err = adapter.Init(`{"conns":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","maxIdle":"4","maxActive":"10","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	adapter := &RedisdCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
-		t.Errorf("Codis Init failed. err: %s.", err.Error())
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
 		return
 	}
 
@@ -276,69 +259,69 @@ func TestCodisMulti(t *testing.T) {
 	mList["k4"] = "val4444"
 	err = adapter.MSet(mList, 60)
 	if err != nil {
-		t.Errorf("Codis MSet failed. err: %s.", err.Error())
+		t.Errorf("Redisd MSet failed. err: %s.", err.Error())
 		return
 	}
 
 	mList2, err := adapter.MGet("k1", "k2", "k3", "k4")
 	if err != nil {
-		t.Errorf("Codis MGet failed. err: %s.", err.Error())
+		t.Errorf("Redisd MGet failed. err: %s.", err.Error())
 		return
 	}
 
 	var v1, v2, v3, v4 string
 	if mList2["k1"] != nil {
 		//json.Unmarshal(mList2["k1"].([]byte), &v1)
-		v1 = string(mList2["k1"].([]byte))
+		v1 = mList2["k1"].(string)
 	}
 	if mList2["k2"] != nil {
 		//json.Unmarshal(mList2["k2"].([]byte), &v2)
-		v2 = string(mList2["k2"].([]byte))
+		v2 = mList2["k2"].(string)
 	}
 	if mList2["k3"] != nil {
 		//json.Unmarshal(mList2["k3"].([]byte), &v3)
-		v3 = string(mList2["k3"].([]byte))
+		v3 = mList2["k3"].(string)
 	}
 	if mList2["k4"] != nil {
 		//json.Unmarshal(mList2["k4"].([]byte), &v4)
-		v4 = string(mList2["k4"].([]byte))
+		v4 = mList2["k4"].(string)
 	}
 
 	if v1 != mList["k1"] || v2 != mList["k2"] || v3 != mList["k3"] || v4 != mList["k4"] {
-		t.Errorf("Codis MGet failed. v1:%s v2:%s v3:%s v4:%s.", v1, v2, v3, v4)
+		t.Errorf("Redisd MGet failed. v1:%s v2:%s v3:%s v4:%s.", v1, v2, v3, v4)
 		return
 	}
 
 	err = adapter.MDel("k1", "k2", "k3", "k4")
 	if err != nil {
-		t.Errorf("Codis MDelete failed. err: %s.", err.Error())
+		t.Errorf("Redisd MDelete failed. err: %s.", err.Error())
 		return
 	}
 }
 
-// TestCodisSet 有序集合测试
-func TestCodisSet(t *testing.T) {
+// TestRedisdSet 有序集合测试
+func TestRedisdSet(t *testing.T) {
 	var err error
-	adapter := &CodisCache{}
-	err = adapter.Init(`{"conns":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","maxIdle":"4","maxActive":"10","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	adapter := &RedisdCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
-		t.Errorf("Codis Init failed. err: %s.", err.Error())
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
 		return
 	}
 
 	key := "sets"
 	// 添加
-	n, err := adapter.ZSet(key, 60, 5, "val5", 3.5, "val3.5", 1, "100", 4, 400, 0.5, "val0.5", 1, "val1")
+	n, err := adapter.ZSet(key, 60, 5.0, "val5", 3.5, "val3.5", 1.0, "100", 4.0, 400, 0.5, "val0.5", 1.0, "val1")
 	fmt.Println(n)
 	if err != nil {
-		t.Errorf("Codis ZSet failed. err: %s.", err.Error())
+		t.Errorf("Redisd ZSet failed. err: %s.", err.Error())
 		return
 	}
 
 	// 查询，递增排列
 	res, err := adapter.ZGet(key, 0, -1, true, false)
 	if err != nil {
-		t.Errorf("Codis ZGet failed. err: %s.", err.Error())
+		t.Errorf("Redisd ZGet failed. err: %s.", err.Error())
 		return
 	}
 	fmt.Println(res)
@@ -346,7 +329,7 @@ func TestCodisSet(t *testing.T) {
 	// 查询，递减排列
 	res, err = adapter.ZGet(key, 0, -1, true, true)
 	if err != nil {
-		t.Errorf("Codis ZGet failed. err: %s.", err.Error())
+		t.Errorf("Redisd ZGet failed. err: %s.", err.Error())
 		return
 	}
 	fmt.Println(res)
@@ -354,18 +337,18 @@ func TestCodisSet(t *testing.T) {
 	// 基数
 	n, err = adapter.ZCard(key)
 	if err != nil {
-		t.Errorf("Codis ZCard failed. err: %d.", n)
+		t.Errorf("Redisd ZCard failed. err: %d.", n)
 		return
 	}
 	if n != 6 {
-		t.Errorf("Codis ZCard failed. Got %d, expected 6.", n)
+		t.Errorf("Redisd ZCard failed. Got %d, expected 6.", n)
 		return
 	}
 
 	// 删除
 	n, err = adapter.ZDel(key, "val3.5", "400")
 	if err != nil {
-		t.Errorf("Codis ZDel failed. err: %s.", err.Error())
+		t.Errorf("Redisd ZDel failed. err: %s.", err.Error())
 		return
 	}
 	fmt.Println(n)
@@ -373,7 +356,7 @@ func TestCodisSet(t *testing.T) {
 	// 查询
 	res, err = adapter.ZGet(key, 0, -1, true, false)
 	if err != nil {
-		t.Errorf("Codis ZGet failed. err: %s.", err.Error())
+		t.Errorf("Redisd ZGet failed. err: %s.", err.Error())
 		return
 	}
 	fmt.Println(res)
@@ -381,10 +364,10 @@ func TestCodisSet(t *testing.T) {
 	// 基数
 	n, err = adapter.ZCard(key)
 	if err != nil {
-		t.Errorf("Codis ZCard failed. err: %d.", n)
+		t.Errorf("Redisd ZCard failed. err: %d.", n)
 		return
 	} else if n != 4 {
-		t.Errorf("Codis ZCard failed. Got %d, expected 4.", n)
+		t.Errorf("Redisd ZCard failed. Got %d, expected 4.", n)
 		return
 	}
 }
@@ -397,10 +380,10 @@ type User struct {
 // TestStruct
 func TestStruct(t *testing.T) {
 	var err error
-	adapter := &CodisCache{}
-	err = adapter.Init(`{"conns":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","maxIdle":"4","maxActive":"10","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	adapter := &RedisdCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
-		t.Errorf("Codis Init failed. err: %s.", err.Error())
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
 		return
 	}
 
@@ -411,17 +394,17 @@ func TestStruct(t *testing.T) {
 	}
 	err = adapter.Set(sk1, sv1, 10)
 	if err != nil {
-		t.Errorf("Codis Set failed. err: %s.", err.Error())
+		t.Errorf("Redisd Set failed. err: %s.", err.Error())
 		return
 	}
 
 	var sv11 User
 	err, _ = adapter.Get(sk1, &sv11)
 	if err != nil {
-		t.Errorf("Codis Get failed. err: %s.", err.Error())
+		t.Errorf("Redisd Get failed. err: %s.", err.Error())
 		return
 	} else if sv11.Id != sv1.Id || sv11.Name != sv1.Name {
-		t.Errorf("Codis Get failed. id[%d] name[%s].", sv11.Id, sv11.Name)
+		t.Errorf("Redisd Get failed. id[%d] name[%s].", sv11.Id, sv11.Name)
 		return
 	}
 
@@ -435,31 +418,31 @@ func TestStruct(t *testing.T) {
 
 	_, err = adapter.HSet(k6, f6, v6, 60)
 	if err != nil {
-		t.Errorf("Codis HSet failed. err: %s.", err.Error())
+		t.Errorf("Redisd HSet failed. err: %s.", err.Error())
 		return
 	}
 
 	var v66 User
 	err, exist := adapter.HGet(k6, f6, &v66)
 	if err != nil {
-		t.Errorf("Codis HGet failed. err: %s.", err.Error())
+		t.Errorf("Redisd HGet failed. err: %s.", err.Error())
 		return
 	} else if !exist {
-		t.Errorf("Codis Get failed. %s - %s is not exist.", k6, f6)
+		t.Errorf("Redisd Get failed. %s - %s is not exist.", k6, f6)
 		return
 	} else if sv11.Id != sv1.Id || sv11.Name != sv1.Name {
-		t.Errorf("Codis Get failed. id[%d] name[%s].", sv11.Id, sv11.Name)
+		t.Errorf("Redisd Get failed. id[%d] name[%s].", sv11.Id, sv11.Name)
 		return
 	}
 }
 
-// TestCodisEncode 加密测试
-func TestCodisEncode(t *testing.T) {
+// TestRedisdEncode 加密测试
+func TestRedisdEncode(t *testing.T) {
 	var err error
-	adapter := &CodisCache{}
-	err = adapter.Init(`{"conns":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","maxIdle":"4","maxActive":"10","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	adapter := &RedisdCache{}
+	err = adapter.Init(`{"addr":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","dialTimeout":"5","readTimeout":"1","writeTimeout":"1","poolSize":"100","minIdleConns":"10","maxConnAge":"3600","poolTimeout":"1","idleTimeout":"300","prefix":"le_","encodeKey":"lxy123"}`)
 	if err != nil {
-		t.Errorf("Codis Init failed. err: %s.", err.Error())
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
 		return
 	}
 
@@ -470,17 +453,17 @@ func TestCodisEncode(t *testing.T) {
 	}
 	err = adapter.Set(sk1, sv1, 60, true)
 	if err != nil {
-		t.Errorf("Codis Set failed. err: %s.", err.Error())
+		t.Errorf("Redisd Set failed. err: %s.", err.Error())
 		return
 	}
 
 	var sv11 User
 	err, _ = adapter.Get(sk1, &sv11)
 	if err != nil {
-		t.Errorf("Codis Set failed. err: %s.", err.Error())
+		t.Errorf("Redisd Set failed. err: %s.", err.Error())
 		return
 	} else if sv11.Id != sv1.Id || sv11.Name != sv1.Name {
-		t.Errorf("Codis Get failed. id[%d] name[%s].", sv11.Id, sv11.Name)
+		t.Errorf("Redisd Get failed. id[%d] name[%s].", sv11.Id, sv11.Name)
 		return
 	}
 
@@ -493,32 +476,32 @@ func TestCodisEncode(t *testing.T) {
 	mList["k4"] = "val4444"
 	err = adapter.MSet(mList, 60, true)
 	if err != nil {
-		t.Errorf("Codis MSet failed. err: %s.", err.Error())
+		t.Errorf("Redisd MSet failed. err: %s.", err.Error())
 		return
 	}
 
 	mList2, err := adapter.MGet("k1", "k2", "k3", "k4")
 	if err != nil {
-		t.Errorf("Codis MGet failed. err: %s.", err.Error())
+		t.Errorf("Redisd MGet failed. err: %s.", err.Error())
 		return
 	}
 
 	var v1, v2, v3, v4 string
 	if mList2["k1"] != nil {
-		v1 = string(mList2["k1"].([]byte))
+		v1 = mList2["k1"].(string)
 	}
 	if mList2["k2"] != nil {
-		v2 = string(mList2["k2"].([]byte))
+		v2 = mList2["k2"].(string)
 	}
 	if mList2["k3"] != nil {
-		v3 = string(mList2["k3"].([]byte))
+		v3 = mList2["k3"].(string)
 	}
 	if mList2["k4"] != nil {
-		v4 = string(mList2["k4"].([]byte))
+		v4 = mList2["k4"].(string)
 	}
 
 	if v1 != mList["k1"] || v2 != mList["k2"] || v3 != mList["k3"] || v4 != mList["k4"] {
-		t.Errorf("Codis MGet failed. v1:%s v2:%s v3:%s v4:%s.", v1, v2, v3, v4)
+		t.Errorf("Redisd MGet failed. v1:%s v2:%s v3:%s v4:%s.", v1, v2, v3, v4)
 		return
 	}
 
@@ -528,34 +511,34 @@ func TestCodisEncode(t *testing.T) {
 	sv2 := 100
 	err = adapter.Set(sk2, sv2, 60, true)
 	if err != nil {
-		t.Errorf("Codis Set failed. err: %s.", err.Error())
+		t.Errorf("Redisd Set failed. err: %s.", err.Error())
 		return
 	}
 
 	var sv22 int
 	err, _ = adapter.Get(sk2, &sv22)
 	if err != nil {
-		t.Errorf("Codis Set failed. err: %s.", err.Error())
+		t.Errorf("Redisd Set failed. err: %s.", err.Error())
 		return
 	} else if sv2 != sv22 {
-		t.Errorf("Codis Get failed. id[%d] name[%d].", sv22, sv2)
+		t.Errorf("Redisd Get failed. id[%d] name[%d].", sv22, sv2)
 		return
 	}
 }
 
 ////////// 实现IJson接口测试 /////////////
 type Item struct {
-	uid   int32
-	name  string
+	uid  int32
+	name string
 }
 
-func (this *Item)MarshalJSON() ([]byte, error) {
+func (this *Item) MarshalJSON() ([]byte, error) {
 	fmt.Println("Item MarshalJSON")
 	str := fmt.Sprintf(`{"uid":%d, "name":"%s"}`, this.uid, this.name)
 	return []byte(str), nil
 }
 
-func (this *Item)UnmarshalJSON(data []byte) error {
+func (this *Item) UnmarshalJSON(data []byte) error {
 	fmt.Println("Item UnmarshalJSON")
 
 	val := make(map[string]interface{})
@@ -567,25 +550,25 @@ func (this *Item)UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// TestCodisIJson 实现IJson接口测试
-func TestCodisIJson(t *testing.T) {
+// TestRedisdIJson 实现IJson接口测试
+func TestRedisdIJson(t *testing.T) {
 	var err error
-	adapter := &CodisCache{}
-	err = adapter.Init(`{"conns":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","maxIdle":"4","maxActive":"10","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	adapter := &RedisdCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
-		t.Errorf("Codis Init failed. err: %s.", err.Error())
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
 		return
 	}
 
 	key := "k1"
 	val1 := Item{
-		uid: 1000,
+		uid:  1000,
 		name: "nick",
 	}
 	// Set
 	err = adapter.Set(key, &val1, 3600)
 	if err != nil {
-		t.Errorf("Codis Set failed. err: %s.", err.Error())
+		t.Errorf("Redisd Set failed. err: %s.", err.Error())
 		return
 	}
 
@@ -593,49 +576,49 @@ func TestCodisIJson(t *testing.T) {
 	val2 := Item{}
 	err, _ = adapter.Get(key, &val2)
 	if err != nil {
-		t.Errorf("Codis Get failed. err: %s.", err.Error())
+		t.Errorf("Redisd Get failed. err: %s.", err.Error())
 		return
-	} else if val1.uid != val2.uid || val1.name != val2.name  {
-		t.Errorf("Codis Get failed. Got: %d-%s expected: %d-%s.", val2.uid, val2.name, val1.uid, val1.name)
+	} else if val1.uid != val2.uid || val1.name != val2.name {
+		t.Errorf("Redisd Get failed. Got: %d-%s expected: %d-%s.", val2.uid, val2.name, val1.uid, val1.name)
 		return
 	}
 
 	// Mset
 	mList := make(map[string]interface{})
 	mList["k1"] = &Item{
-		uid: 1001,
+		uid:  1001,
 		name: "nick1",
 	}
 	mList["k2"] = &Item{
-		uid: 1002,
+		uid:  1002,
 		name: "nick2",
 	}
 	mList["k3"] = &Item{
-		uid: 1003,
+		uid:  1003,
 		name: "nick3",
 	}
 	err = adapter.MSet(mList, 600)
 	if err != nil {
-		t.Errorf("Codis MSet failed. err: %s.", err.Error())
+		t.Errorf("Redisd MSet failed. err: %s.", err.Error())
 		return
 	}
 
 	// HSet
 	k6 := "addr"
 	_, err = adapter.HSet(k6, "baidu", &Item{
-		uid: 1001,
+		uid:  1001,
 		name: "baidu",
 	}, 60)
 	if err != nil {
-		t.Errorf("Codis HSet failed. err: %s.", err.Error())
+		t.Errorf("Redisd HSet failed. err: %s.", err.Error())
 		return
 	}
 	_, err = adapter.HSet(k6, "le", &Item{
-		uid: 1002,
+		uid:  1002,
 		name: "leeco",
 	}, 60)
 	if err != nil {
-		t.Errorf("Codis HSet failed. err: %s.", err.Error())
+		t.Errorf("Redisd HSet failed. err: %s.", err.Error())
 		return
 	}
 
@@ -643,71 +626,48 @@ func TestCodisIJson(t *testing.T) {
 	v66 := Item{}
 	err, _ = adapter.HGet(k6, "baidu", &v66)
 	if err != nil {
-		t.Errorf("Codis HGet failed. err: %s.", err.Error())
+		t.Errorf("Redisd HGet failed. err: %s.", err.Error())
 		return
-	} else if v66.uid != 1001 || v66.name != "baidu"  {
-		t.Errorf("Codis Get failed. Got: %d-%s expected: %d-%s.", v66.uid, v66.name, 1001, "baidu")
+	} else if v66.uid != 1001 || v66.name != "baidu" {
+		t.Errorf("Redisd Get failed. Got: %d-%s expected: %d-%s.", v66.uid, v66.name, 1001, "baidu")
 		return
 	}
 }
 
-// TestCodisExec
-func TestCodisExec(t *testing.T) {
+// TestRedisdPipeline
+func TestRedisdPipeline(t *testing.T) {
 	var err error
-	adapter := &CodisCache{}
-	err = adapter.Init(`{"conns":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","maxIdle":"4","maxActive":"10","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	adapter := &RedisdCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
-		t.Errorf("Codis Init failed. err: %s.", err.Error())
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
 		return
 	}
 
-	cmd1 := cache.NewCmd("SET", "foo", "bar")
-	cmd2 := cache.NewCmd("GET", "foo")
-	cmd3 := cache.NewCmd("SET", "num", 0)
-	cmd4 := cache.NewCmd("INCR", "num")
-	cmd5 := cache.NewCmd("INCR", "num")
-	res, err := adapter.Exec(cmd1, cmd2, cmd3, cmd4, cmd5)
+	// 非事务模式
+	pipe := adapter.Pipeline(false).Pipe
+	key := "foo"
+	r1 := pipe.Set(key, 100, 10*time.Second)
+	r2 := pipe.Get(key)
+	r3 := pipe.Incr(key)
+	r4 := pipe.Del(key)
+	_, err = pipe.Exec()
 	if err != nil {
-		t.Errorf("Codis Exec failed. err: %s.", err.Error())
+		fmt.Println("Exec err:", err)
 		return
 	}
-	fmt.Println(res)
-	for k, r := range res.([]interface{}) {
-		if v, ok := r.(string); ok {
-			fmt.Println("string", k, v)
-		} else if v, ok := r.([]byte); ok {
-			fmt.Println("byte", k, string(v))
-		} else if v, ok := r.(int64); ok {
-			fmt.Println("int64", k, v)
-		}
+	fmt.Println("r1:", r1.Val(), "r2:", r2.Val(), "r3:", r3.Val(), "r4:", r4.Val())
+
+	// 事务模式
+	pipe = adapter.Pipeline(false).Pipe
+	r1 = pipe.Set(key, 100, 10*time.Second)
+	r2 = pipe.Get(key)
+	r3 = pipe.Incr(key)
+	r4 = pipe.Del(key)
+	_, err = pipe.Exec()
+	if err != nil {
+		fmt.Println("Exec err:", err)
+		return
 	}
+	fmt.Println("r1:", r1.Val(), "r2:", r2.Val(), "r3:", r3.Val(), "r4:", r4.Val())
 }
-
-// TestCodisPipeline
-func TestCodisPipeline(t *testing.T) {
-	var err error
-	adapter := &CodisCache{}
-	err = adapter.Init(`{"conns":"10.110.60.60:19100,10.110.50.76:19100,10.110.60.45:19100","auth":"rZPQg0t7oKYXGFt","dbNum":"1","maxIdle":"4","maxActive":"10","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
-	if err != nil {
-		t.Errorf("Codis Init failed. err: %s.", err.Error())
-		return
-	}
-
-	cmd1 := cache.NewCmd("SET", "foo", "bar")
-	cmd2 := cache.NewCmd("GET", "foo")
-	cmd3 := cache.NewCmd("SET", "num", 0)
-	cmd4 := cache.NewCmd("INCR", "num")
-	cmd5 := cache.NewCmd("INCR", "num")
-	res := adapter.Pipeline(cmd1, cmd2, cmd3, cmd4, cmd5)
-	fmt.Println(res)
-	for k, r := range res {
-		if v, ok := r.CmdRes.(string); ok {
-			fmt.Println("string", k, v)
-		} else if v, ok := r.CmdRes.([]byte); ok {
-			fmt.Println("byte", k, string(v))
-		} else if v, ok := r.CmdRes.(int64); ok {
-			fmt.Println("int64", k, v)
-		}
-	}
-}
-

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lixy529/bingo/utils"
+	"github.com/go-redis/redis"
 )
 
 const (
@@ -46,8 +47,7 @@ type Cache interface {
 	ZCard(key string) (int64, error)
 
 	// pipeline支持
-	Pipeline(cmds ...Cmd) ([]PipeRes)
-	Exec(cmds ...Cmd) (interface{}, error)
+	Pipeline(isTx bool) Pipeliner
 }
 
 // IJson 生成与解析json串接口，如果参数实现了此接口，则生成与解析json串就使用参数的函数
@@ -56,24 +56,9 @@ type IJson interface {
 	UnmarshalJSON(data []byte) error
 }
 
-// Pipeline 执行结果
-type PipeRes struct {
-	CmdRes interface{}
-	CmdErr error
-}
-
-// Cmd 保存命令，用于pipeline传递命令
-type Cmd struct {
-	Name string
-	Args []interface{}
-}
-
-// NewCmd 实例化Cmd对象
-func NewCmd(name string, args ...interface{}) Cmd {
-	return Cmd{
-		Name: name,
-		Args: args,
-	}
+// Pipeliner redis管道
+type Pipeliner struct {
+	Pipe redis.Pipeliner
 }
 
 var Adapters = make(map[string]Cache)

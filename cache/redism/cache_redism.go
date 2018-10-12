@@ -1,150 +1,202 @@
-// redis adapter
+// redism adapter
+// 用于主从模式的redis操作
 //   变更历史
 //     2017-02-21  lixiaoya  新建
-package redis
+package redism
 
 import (
 	json "github.com/json-iterator/go"
 	"errors"
 	"fmt"
-	"github.com/gomodule/redigo/redis"
+	"github.com/go-redis/redis"
 	"github.com/lixy529/bingo/cache"
 	"strconv"
 	"time"
 )
 
-// RedisCache Redis缓存
-type RedisCache struct {
+const NOT_EXIST = "redis: nil"
+
+// RedismCache Redis缓存
+type RedismCache struct {
 	master *RedisPool // 主库
 	slave  *RedisPool // 从库
 
-	mConn  string // 主库连接串
+	mAddr  string // 主库连接串
 	mDbNum int    // 主库DbNum
 	mAuth  string // 主库授权码
 
-	sConn  string // 从库连接串
+	sAddr  string // 从库连接串
 	sDbNum int    // 从库DbNum
 	sAuth  string // 从库授权码
 
-	maxIdle     int           // 最大空闲连接数，默认为3
-	maxActive   int           // 最大的激活连接数，默认为0，0不限制
-	idleTimeOut time.Duration // 空闲超时时间，默认为180秒，0关闭
+	dialTimeout  time.Duration // 连接超时时间，单位秒，默认5秒
+	readTimeout  time.Duration // 读超时时间，单位秒，-1-不超时，0-使用默认3秒
+	writeTimeout time.Duration // 写超时时间，单位秒，默认为readTimeout
+	poolSize     int           // 每个节点连接池的连接数，默认为cpu个数的10倍
+	minIdleConns int           // 最少空闲连接数，默认为0
+	maxConnAge   time.Duration // 最大连接时间，单位秒，超时时间自动关闭，默认为0
+	poolTimeout  time.Duration // 如果所有连接都忙时的等待时间，默认为readTimeout+1秒
+	idleTimeout  time.Duration // 最大空闲时间，单位秒，默认为5分钟
 
+	prefix    string // key前缀，如果配置里有，则所有key前自动添加此前缀
 	encodeKey []byte // 加解密密钥，使用Aes加密，长度为16的倍数
 }
 
-// NewRedisCache 新建一个RedisCache适配器.
-func NewRedisCache() cache.Cache {
-	return &RedisCache{}
+// NewRedismCache 新建一个RedismCache适配器.
+func NewRedismCache() cache.Cache {
+	return &RedismCache{}
 }
 
 // Init 初始化
 //   参数
 //     config: 配置josn串
 //       {
-//       "master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"xxxxx"},
-//       "slave":{"conn":"127.0.0.2:6379","dbNum":"1","auth":"xxxxx"},
-//       "maxIdle":"3",
-//       "maxActive":"10",
-//       "idleTimeOut":"180"
-//       "encodeKey":"abcdefghij123456",
+//         "master":{"addr":"127.0.0.1:6379","dbNum":"0","auth":"xxxxx"},
+//         "slave":{"addr":"127.0.0.2:6379","dbNum":"1","auth":"xxxxx"},
+//         "dialTimeout":"5",
+//         "readTimeout":"5",
+//         "writeTimeout":"5",
+//         "poolSize":"5",
+//         "minIdleConns":"5",
+//         "maxConnAge":"5",
+//         "poolTimeout":"5",
+//         "idleTimeout":"5",
+//         "prefix":"le_",
+//         "encodeKey":"abcdefghij123456",
 //       }
-//       auth: 授权密码
-//       maxIdle: 最大空闲连接数，默认为3
-//       maxActive: 最大连接数，0不限制，默认为0
-//       idelTimeOut: 最大空闲时间，单位秒，0不限制，默认为0
+//       addr:         连接主机和端口，如127.0.0.1:1900
+//       auth:         授权密码
+//       dbNum:        db编号，默认为0
+//       dialTimeout:  连接超时时间，单位秒，默认5秒
+//       readTimeout:  读超时时间，单位秒，-1-不超时，0-使用默认3秒
+//       writeTimeout: 写超时时间，单位秒，默认为readTimeout
+//       poolSize:     每个节点连接池的连接数，默认为cpu个数的10倍
+//       minIdleConns: 最少空闲连接数，默认为0
+//       maxConnAge:   最大连接时间，单位秒，超时时间自动关闭，默认为0
+//       poolTimeout:  如果所有连接都忙时的等待时间，默认为readTimeout+1秒
+//       idleTimeout:  最大空闲时间，单位秒，默认为5分钟
+//       prefix:       key前缀，如果配置里有，则所有key前自动添加此前缀
 //   返回
 //     成功时返回nil，失败返回错误信息
-func (rc *RedisCache) Init(config string) error {
-	var mapCfg map[string]interface{}
+func (rc *RedismCache) Init(config string) error {
+	var mapCfg map[string]string
 	var err error
 
 	err = json.Unmarshal([]byte(config), &mapCfg)
 	if err != nil {
-		return fmt.Errorf("RedisCache: Unmarshal json[%s] error, %s", config, err.Error())
+		return fmt.Errorf("RedismCache: Unmarshal json[%s] error, %s", config, err.Error())
 	}
 
-	// 最大空闲连接数
-	rc.maxIdle, err = strconv.Atoi(mapCfg["maxIdle"].(string))
-	if err != nil {
-		rc.maxIdle = 3
-	}
-
-	// 最大激活连接数
-	rc.maxActive, err = strconv.Atoi(mapCfg["maxActive"].(string))
-	if err != nil {
-		rc.maxActive = 0
-	}
-
-	// 空闲连接的超时时间
-	idelTimeOut, err := strconv.Atoi(mapCfg["idleTimeOut"].(string))
-	if err != nil {
-		rc.idleTimeOut = 0
+	// 连接超时时间
+	dialTimeout, err := strconv.Atoi(mapCfg["dialTimeout"])
+	if err != nil || dialTimeout < 0 {
+		rc.dialTimeout = 5
 	} else {
-		rc.idleTimeOut = time.Duration(idelTimeOut)
+		rc.dialTimeout = time.Duration(dialTimeout)
 	}
 
-	// 主库配置
-	var ok bool
-	var temp interface{}
-	temp, ok = mapCfg["master"]
-	if !ok {
-		return errors.New("RedisCache: Master config is empty")
-	}
-
-	masterCfg := temp.(map[string]interface{})
-	temp, ok = masterCfg["conn"]
-	if !ok {
-		return errors.New("RedisCache: Master conn is empty")
-	}
-	rc.mConn = temp.(string)
-
-	temp, ok = masterCfg["dbNum"]
-	if ok {
-		rc.mDbNum, _ = strconv.Atoi(temp.(string))
-	} else {
-		rc.mDbNum = 0
-	}
-
-	rc.mAuth = masterCfg["auth"].(string)
-
-	// 实例化主库
-	rc.master, err = NewRedisPool(rc.mConn, rc.mDbNum, rc.mAuth, rc.maxIdle, rc.maxActive, rc.idleTimeOut, rc.encodeKey)
+	// 读超时时间
+	readTimeout, err := strconv.Atoi(mapCfg["readTimeout"])
 	if err != nil {
-		return fmt.Errorf("RedisCache: New master pool err: %s", err.Error())
+		rc.readTimeout = 3
+	} else if readTimeout < 0 {
+		rc.readTimeout = -1
+	} else {
+		rc.readTimeout = time.Duration(readTimeout)
 	}
 
-	// 从库配置
-	temp, ok = mapCfg["slave"]
-	if !ok {
-		rc.slave = rc.master
+	// 写超时时间
+	writeTimeout, err := strconv.Atoi(mapCfg["writeTimeout"])
+	if err != nil {
+		rc.writeTimeout = rc.readTimeout
+	} else if writeTimeout < 0 {
+		rc.writeTimeout = -1
 	} else {
-		slaveCfg := temp.(map[string]interface{})
-		temp, ok = slaveCfg["conn"]
-		if !ok {
-			return errors.New("RedisCache: Slave conn is empty")
-		}
-		rc.sConn = temp.(string)
+		rc.writeTimeout = time.Duration(writeTimeout)
+	}
 
-		temp, ok = slaveCfg["dbNum"]
-		if ok {
-			rc.sDbNum, _ = strconv.Atoi(temp.(string))
-		} else {
-			rc.sDbNum = 0
-		}
+	// 每个节点连接池的连接数
+	poolSize, err := strconv.Atoi(mapCfg["poolSize"])
+	if err != nil || poolSize < 0 {
+		rc.poolSize = 0
+	} else {
+		rc.poolSize = poolSize
+	}
 
-		rc.sAuth = slaveCfg["auth"].(string)
+	// 最少空闲连接数
+	minIdleConns, err := strconv.Atoi(mapCfg["minIdleConns"])
+	if err != nil || minIdleConns < 0 {
+		rc.minIdleConns = 0
+	} else {
+		rc.minIdleConns = minIdleConns
+	}
 
-		// 实例化从库
-		rc.slave, err = NewRedisPool(rc.sConn, rc.sDbNum, rc.sAuth, rc.maxIdle, rc.maxActive, rc.idleTimeOut, rc.encodeKey)
-		if err != nil {
-			return fmt.Errorf("RedisCache: New slave pool err: %s", err.Error())
-		}
+	// 最大连接时间
+	maxConnAge, err := strconv.Atoi(mapCfg["maxConnAge"])
+	if err != nil || maxConnAge < 0 {
+		rc.maxConnAge = 0
+	} else {
+		rc.maxConnAge = time.Duration(maxConnAge)
+	}
+
+	// 如果所有连接都忙时的等待时间
+	poolTimeout, err := strconv.Atoi(mapCfg["poolTimeout"])
+	if err != nil || poolTimeout < 0 {
+		rc.poolTimeout = rc.readTimeout + 1
+	} else {
+		rc.poolTimeout = time.Duration(poolTimeout)
+	}
+
+	// 最大空闲时间
+	idleTimeout, err := strconv.Atoi(mapCfg["idleTimeout"])
+	if err != nil || idleTimeout < 0 {
+		rc.idleTimeout = 300
+	} else {
+		rc.idleTimeout = time.Duration(idleTimeout)
+	}
+
+	// 前缀
+	if prefix, ok := mapCfg["prefix"]; ok {
+		rc.prefix = prefix
 	}
 
 	// 加密密钥
-	if tmp, ok := mapCfg["encodeKey"]; ok {
-		rc.encodeKey = []byte(tmp.(string))
+	if tmp, ok := mapCfg["encodeKey"]; ok && tmp != "" {
+		rc.encodeKey = []byte(tmp)
+	}
+
+	// 主库配置
+	rc.mAddr = mapCfg["mAddr"]
+	if rc.mAddr == "" {
+		return errors.New("RedismCache: Master addr is empty")
+	}
+
+	dbNum, err := strconv.Atoi(mapCfg["mDbNum"])
+	if err != nil {
+		rc.mDbNum = 0
+	} else {
+		rc.mDbNum = dbNum
+	}
+
+	rc.mAuth = mapCfg["mAuth"]
+
+	// 实例化主库
+	rc.master = NewRedisPool(rc.mAddr, rc.mAuth, rc.mDbNum, rc.dialTimeout, rc.readTimeout, rc.writeTimeout, rc.poolSize, rc.minIdleConns, rc.maxConnAge, rc.poolTimeout, rc.idleTimeout, rc.prefix, rc.encodeKey)
+
+	// 从库配置
+	rc.sAddr = mapCfg["sAddr"]
+	if rc.sAddr == "" {
+		rc.slave = rc.master
+	} else {
+		dbNum, err := strconv.Atoi(mapCfg["sDbNum"])
+		if err != nil {
+			rc.sDbNum = 0
+		} else {
+			rc.sDbNum = dbNum
+		}
+
+		rc.sAuth = mapCfg["sAuth"]
+		rc.slave = NewRedisPool(rc.sAddr, rc.sAuth, rc.sDbNum, rc.dialTimeout, rc.readTimeout, rc.writeTimeout, rc.poolSize, rc.minIdleConns, rc.maxConnAge, rc.poolTimeout, rc.idleTimeout, rc.prefix, rc.encodeKey)
 	}
 
 	return nil
@@ -158,7 +210,7 @@ func (rc *RedisCache) Init(config string) error {
 //     encode: 是否加密标识
 //   返回
 //     成功时返回nil，失败返回错误信息
-func (rc *RedisCache) Set(key string, val interface{}, expire int32, encode ...bool) error {
+func (rc *RedismCache) Set(key string, val interface{}, expire int32, encode ...bool) error {
 	return rc.master.Set(key, val, expire, encode...)
 }
 
@@ -168,7 +220,7 @@ func (rc *RedisCache) Set(key string, val interface{}, expire int32, encode ...b
 //     val: 保存结果地址
 //   返回
 //     错误信息，是否存在
-func (rc *RedisCache) Get(key string, val interface{}) (error, bool) {
+func (rc *RedismCache) Get(key string, val interface{}) (error, bool) {
 	return rc.slave.Get(key, val)
 }
 
@@ -177,7 +229,7 @@ func (rc *RedisCache) Get(key string, val interface{}) (error, bool) {
 //     key:    key值
 //   返回
 //     成功时返回nil，失败返回错误信息
-func (rc *RedisCache) Del(key string) error {
+func (rc *RedismCache) Del(key string) error {
 	return rc.master.Del(key)
 }
 
@@ -188,7 +240,7 @@ func (rc *RedisCache) Del(key string) error {
 //     encode: 是否加密标识
 //   返回
 //     成功返回查询结果，失败返回错误信息，key不存在时对应的val为nil
-func (rc *RedisCache) MSet(mList map[string]interface{}, expire int32, encode ...bool) error {
+func (rc *RedismCache) MSet(mList map[string]interface{}, expire int32, encode ...bool) error {
 	return rc.master.MSet(mList, expire, encode...)
 }
 
@@ -197,7 +249,7 @@ func (rc *RedisCache) MSet(mList map[string]interface{}, expire int32, encode ..
 //     keys:  要查询的key值
 //   返回
 //     成功返回查询结果，失败返回错误信息
-func (rc *RedisCache) MGet(keys ...string) (map[string]interface{}, error) {
+func (rc *RedismCache) MGet(keys ...string) (map[string]interface{}, error) {
 	return rc.slave.MGet(keys...)
 }
 
@@ -206,7 +258,7 @@ func (rc *RedisCache) MGet(keys ...string) (map[string]interface{}, error) {
 //     keys:  要查询的key值
 //   返回
 //     成功时返回nil，失败返回错误信息
-func (rc *RedisCache) MDel(keys ...string) error {
+func (rc *RedismCache) MDel(keys ...string) error {
 	return rc.master.MDel(keys...)
 }
 
@@ -217,7 +269,7 @@ func (rc *RedisCache) MDel(keys ...string) error {
 //     delta: 递增的量
 //   返回
 //     递增后的结果，失败返回错误信息
-func (rc *RedisCache) Incr(key string, delta ...uint64) (int64, error) {
+func (rc *RedismCache) Incr(key string, delta ...uint64) (int64, error) {
 	return rc.master.Incr(key, delta...)
 }
 
@@ -228,7 +280,7 @@ func (rc *RedisCache) Incr(key string, delta ...uint64) (int64, error) {
 //     delta: 递减的量
 //   返回
 //     递减后的结果，失败返回错误信息
-func (rc *RedisCache) Decr(key string, delta ...uint64) (int64, error) {
+func (rc *RedismCache) Decr(key string, delta ...uint64) (int64, error) {
 	return rc.master.Decr(key, delta...)
 }
 
@@ -237,7 +289,7 @@ func (rc *RedisCache) Decr(key string, delta ...uint64) (int64, error) {
 //     key:  要查询的key值
 //   返回
 //     存在返回true，不存在返回false
-func (rc *RedisCache) IsExist(key string) (bool, error) {
+func (rc *RedismCache) IsExist(key string) (bool, error) {
 	return rc.slave.IsExist(key)
 }
 
@@ -246,7 +298,7 @@ func (rc *RedisCache) IsExist(key string) (bool, error) {
 //
 //   返回
 //     成功时返回nil，失败返回错误信息
-func (rc *RedisCache) ClearAll() error {
+func (rc *RedismCache) ClearAll() error {
 	return rc.master.ClearAll()
 }
 
@@ -258,7 +310,7 @@ func (rc *RedisCache) ClearAll() error {
 //     expire: 缓存过期时间，以秒为单位：从现在开始的相对时间，“0”表示项目没有到期时间
 //   返回
 //     成功时返回添加的个数，失败返回错误信息
-func (rc *RedisCache) HSet(key string, field string, val interface{}, expire int32) (int64, error) {
+func (rc *RedismCache) HSet(key string, field string, val interface{}, expire int32) (int64, error) {
 	return rc.master.HSet(key, field, val, expire)
 }
 
@@ -269,7 +321,7 @@ func (rc *RedisCache) HSet(key string, field string, val interface{}, expire int
 //     val:   保存结果地址
 //   返回
 //     错误信息，是否存在
-func (rc *RedisCache) HGet(key string, field string, val interface{}) (error, bool) {
+func (rc *RedismCache) HGet(key string, field string, val interface{}) (error, bool) {
 	return rc.slave.HGet(key, field, val)
 }
 
@@ -279,7 +331,7 @@ func (rc *RedisCache) HGet(key string, field string, val interface{}) (error, bo
 //     fields: 哈希表field值
 //   返回
 //     成功返回nil，失败返回错误信息
-func (rc *RedisCache) HDel(key string, fields ...string) error {
+func (rc *RedismCache) HDel(key string, fields ...string) error {
 	return rc.master.HDel(key, fields...)
 }
 
@@ -288,7 +340,7 @@ func (rc *RedisCache) HDel(key string, fields ...string) error {
 //     key: 有序集合key值
 //   返回
 //     查询的结果数据和错误码
-func (rc *RedisCache) HGetAll(key string) (map[string]interface{}, error) {
+func (rc *RedismCache) HGetAll(key string) (map[string]interface{}, error) {
 	return rc.slave.HGetAll(key)
 }
 
@@ -298,7 +350,7 @@ func (rc *RedisCache) HGetAll(key string) (map[string]interface{}, error) {
 //     fields: 给定域的集合
 //   返回
 //     查询的结果数据和错误码
-func (rc *RedisCache) HMGet(key string, fields ...string) (map[string]interface{}, error) {
+func (rc *RedismCache) HMGet(key string, fields ...string) (map[string]interface{}, error) {
 	return rc.slave.HMGet(key, fields...)
 }
 
@@ -307,7 +359,7 @@ func (rc *RedisCache) HMGet(key string, fields ...string) (map[string]interface{
 //     key: 有序集合key值
 //   返回
 //     查询的结果数据和错误码
-func (rc *RedisCache) HVals(key string) ([]interface{}, error) {
+func (rc *RedismCache) HVals(key string) ([]interface{}, error) {
 	return rc.slave.HVals(key)
 }
 
@@ -318,7 +370,7 @@ func (rc *RedisCache) HVals(key string) ([]interface{}, error) {
 //     val:    有序集合值，数据为成对出来，前面为score(整数值或双精度浮点数), 后面为变量
 //   返回
 //     成功添加的数据和错误码
-func (rc *RedisCache) ZSet(key string, expire int32, val ...interface{}) (int64, error) {
+func (rc *RedismCache) ZSet(key string, expire int32, val ...interface{}) (int64, error) {
 	return rc.master.ZSet(key, expire, val...)
 }
 
@@ -331,7 +383,7 @@ func (rc *RedisCache) ZSet(key string, expire int32, val ...interface{}) (int64,
 //     isRev:      true-递减排列，使用ZREVRANGE命令 false-递增排列，使用ZRANGE命令
 //   返回
 //     查询的结果数据和错误码
-func (rc *RedisCache) ZGet(key string, start, stop int, withScores bool, isRev bool) ([]string, error) {
+func (rc *RedismCache) ZGet(key string, start, stop int, withScores bool, isRev bool) ([]string, error) {
 	return rc.slave.ZGet(key, start, stop, withScores, isRev)
 }
 
@@ -341,7 +393,7 @@ func (rc *RedisCache) ZGet(key string, start, stop int, withScores bool, isRev b
 //     field: 要删除的数据
 //   返回
 //     成功删除的数据个数和错误码
-func (rc *RedisCache) ZDel(key string, field ...string) (int64, error) {
+func (rc *RedismCache) ZDel(key string, field ...string) (int64, error) {
 	return rc.master.ZDel(key, field...)
 }
 
@@ -350,70 +402,82 @@ func (rc *RedisCache) ZDel(key string, field ...string) (int64, error) {
 //     key: 有序集合key值
 //   返回
 //     有序集 key 的基数和错误码
-func (rc *RedisCache) ZCard(key string) (int64, error) {
+func (rc *RedismCache) ZCard(key string) (int64, error) {
 	return rc.slave.ZCard(key)
 }
 
 // Pipeline 执行pipeline命令
+//   实例：
+//     pipe := rc.Pipeline(false).Pipe
+//     incr := pipe.Incr("pipeline_counter")
+//     pipe.Expire("pipeline_counter", time.Hour)
+//     _, err := pipe.Exec()
+//     fmt.Println(incr.Val(), err)
 //   参数
-//     cmds: 要执行的命令
+//     isTx: 是否事务模式
 //   返回
-//     成功刊返回命令执行的结果，失败返回错误信息
-func (rc *RedisCache) Pipeline(cmds ...cache.Cmd) ([]cache.PipeRes) {
-	return rc.master.Pipeline(cmds...)
+//     成功刊返回命令执行的结果
+func (rc *RedismCache) Pipeline(isTx bool) cache.Pipeliner {
+	return rc.master.Pipeline(isTx)
 }
 
-// Exec 执行pipeline事务命令
-//   参数
-//     cmds: 要执行的命令
-//   返回
-//     成功刊返回命令执行的结果，失败返回错误信息
-func (rc *RedisCache) Exec(cmds ...cache.Cmd) (interface{}, error) {
-	return rc.master.Exec(cmds...)
-}
-
-// RedisCache Redis缓存
+// RedisPool Redis缓存
 type RedisPool struct {
-	connPool    *redis.Pool   // 连接池
-	connCfg     string        // 连接配置
-	dbNum       int           // 默认数据库
-	auth        string        // 认证
-	maxIdle     int           // 最大空闲连接数，默认为3
-	maxActive   int           // 最大的激活连接数，默认为0，0不限制
-	idleTimeOut time.Duration // 空闲超时时间，默认为180秒，0关闭
-	encodeKey   []byte        // 加解密密钥，使用Aes加密，长度为16的倍数
+	client *redis.Client // 连接池
+
+	addr         string        // 连接主机和端口，多个主机用逗号分割，如127.0.0.1:1900,127.0.0.2:1900
+	auth         string        // 授权密码
+	dbNum        int           // db编号，默认为0
+	dialTimeout  time.Duration // 连接超时时间，单位秒，默认5秒
+	readTimeout  time.Duration // 读超时时间，单位秒，-1-不超时，0-使用默认3秒
+	writeTimeout time.Duration // 写超时时间，单位秒，默认为readTimeout
+	poolSize     int           // 每个节点连接池的连接数，默认为cpu个数的10倍
+	minIdleConns int           // 最少空闲连接数，默认为0
+	maxConnAge   time.Duration // 最大连接时间，单位秒，超时时间自动关闭，默认为0
+	poolTimeout  time.Duration // 如果所有连接都忙时的等待时间，默认为readTimeout+1秒
+	idleTimeout  time.Duration // 最大空闲时间，单位秒，默认为5分钟
+
+	prefix    string // key前缀，如果配置里有，则所有key前自动添加此前缀
+	encodeKey []byte // 加解密密钥，使用Aes加密，长度为16的倍数
 }
 
 // NewRedisPool 实例化RedisPool对象
 //   参数
-//     conn:  连接配置
-//     dbNum: db号
-//     auth:  授权码
-//     maxIdle: 最大空闲连接数，默认为3
-//     maxActive: 最大的激活连接数，默认为0，0不限制
-//     idleTimeOut: 空闲超时时间，默认为180秒，0关闭
+//     addr:         连接主机和端口
+//     auth:         授权码
+//     dbNum:        db号
+//     dialTimeout:  连接超时时间，单位秒，默认5秒
+//     readTimeout:  读超时时间，单位秒，-1-不超时，0-使用默认3秒
+//     writeTimeout: 写超时时间，单位秒，默认为readTimeout
+//     poolSize:     每个节点连接池的连接数，默认为cpu个数的10倍
+//     minIdleConns: 最少空闲连接数，默认为0
+//     maxConnAge:   最大连接时间，单位秒，超时时间自动关闭，默认为0
+//     poolTimeout:  如果所有连接都忙时的等待时间，默认为readTimeout+1秒
+//     idleTimeout:  最大空闲时间，单位秒，默认为5分钟
+//     prefix:       key前缀，如果配置里有，则所有key前自动添加此前缀
+//     encodeKey:    加密key
 //   返回
-//     成功时Redis连接池，失败时返回错误信息
-func NewRedisPool(conn string, dbNum int, auth string, maxIdle int, maxActive int, idleTimeOut time.Duration, encodeKey []byte) (*RedisPool, error) {
+//     成功时Redis连接池
+func NewRedisPool(addr, auth string, dbNum int, dialTimeout, readTimeout, writeTimeout time.Duration, poolSize, minIdleConns int, maxConnAge, poolTimeout, idleTimeout time.Duration, prefix string, encodeKey []byte) *RedisPool {
 	rp := &RedisPool{
-		connCfg:     conn,
-		dbNum:       dbNum,
-		auth:        auth,
-		maxIdle:     maxIdle,
-		maxActive:   maxActive,
-		idleTimeOut: idleTimeOut,
-		encodeKey:   encodeKey,
+		addr:         addr,
+		auth:         auth,
+		dbNum:        dbNum,
+		dialTimeout:  dialTimeout,
+		readTimeout:  readTimeout,
+		writeTimeout: writeTimeout,
+		poolSize:     poolSize,
+		minIdleConns: minIdleConns,
+		maxConnAge:   maxConnAge,
+		poolTimeout:  poolTimeout,
+		idleTimeout:  idleTimeout,
+		prefix:       prefix,
+		encodeKey:    encodeKey,
 	}
 
-	err := rp.connect()
-	if err != nil {
-		return nil, err
-	}
+	rp.connect()
 
-	c := rp.connPool.Get()
-	defer c.Close()
-
-	return rp, c.Err()
+	return rp
 }
 
 // connect 连接redis
@@ -421,52 +485,22 @@ func NewRedisPool(conn string, dbNum int, auth string, maxIdle int, maxActive in
 //
 //   返回
 //     成功时返回nil，失败时返回错误信息
-func (rp *RedisPool) connect() error {
-	dialFunc := func() (c redis.Conn, err error) {
-		c, err = redis.Dial("tcp", rp.connCfg)
-		if err != nil {
-			return nil, err
-		}
+func (rp *RedisPool) connect() {
+	rp.client = redis.NewClient(&redis.Options{
+		Addr:         rp.addr,
+		Password:     rp.auth,
+		DB:           rp.dbNum,
+		DialTimeout:  rp.dialTimeout * time.Second,
+		ReadTimeout:  rp.readTimeout * time.Second,
+		WriteTimeout: rp.writeTimeout * time.Second,
+		PoolSize:     rp.poolSize,
+		MinIdleConns: rp.minIdleConns,
+		MaxConnAge:   rp.maxConnAge * time.Second,
+		PoolTimeout:  rp.poolTimeout * time.Second,
+		IdleTimeout:  rp.idleTimeout * time.Second,
+	})
 
-		if rp.auth != "" {
-			if _, err := c.Do("AUTH", rp.auth); err != nil {
-				c.Close()
-				return nil, err
-			}
-		}
-
-		if rp.dbNum > 0 {
-			_, selErr := c.Do("SELECT", rp.dbNum)
-			if selErr != nil {
-				c.Close()
-				return nil, selErr
-			}
-		}
-
-		return
-	}
-	// initialize a new pool
-	rp.connPool = &redis.Pool{
-		MaxIdle:     rp.maxIdle,
-		MaxActive:   rp.maxActive,
-		IdleTimeout: rp.idleTimeOut * time.Second,
-		Dial:        dialFunc,
-	}
-
-	return nil
-}
-
-// do 从连接池里取一个连接，调用redis命令
-//   参数
-//     commandName:  命令串
-//     args:         参数
-//   返回
-//     成功时返回结果信息，失败时返回错误信息
-func (rp *RedisPool) do(commandName string, args ...interface{}) (interface{}, error) {
-	c := rp.connPool.Get()
-	defer c.Close()
-
-	return c.Do(commandName, args...)
+	return
 }
 
 // Set 向缓存设置一个值
@@ -493,13 +527,11 @@ func (rp *RedisPool) Set(key string, val interface{}, expire int32, encode ...bo
 		}
 	}
 
-	if expire > 0 {
-		_, err = rp.do("SETEX", key, expire, data)
-	} else {
-		_, err = rp.do("SET", key, data)
+	if rp.prefix != "" {
+		key = rp.prefix + key
 	}
 
-	return err
+	return rp.client.Set(key, data, time.Duration(expire)*time.Second).Err()
 }
 
 // Get 从缓存取一个值
@@ -509,17 +541,20 @@ func (rp *RedisPool) Set(key string, val interface{}, expire int32, encode ...bo
 //   返回
 //     错误信息，是否存在
 func (rp *RedisPool) Get(key string, val interface{}) (error, bool) {
-	v, err := rp.do("GET", key)
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+
+	v, err := rp.client.Get(key).Result()
 	if err != nil {
+		if err.Error() == NOT_EXIST {
+			return nil, false
+		}
 		return err, false
 	}
 
-	if v == nil {
-		return nil, false
-	}
-
 	// 解密判断
-	data, err := cache.Decode(v.([]byte), rp.encodeKey)
+	data, err := cache.Decode([]byte(v), rp.encodeKey)
 	if err != nil {
 		return err, true
 	}
@@ -539,9 +574,11 @@ func (rp *RedisPool) Get(key string, val interface{}) (error, bool) {
 //   返回
 //     成功时返回nil，失败返回错误信息
 func (rp *RedisPool) Del(key string) error {
-	_, err := rp.do("DEL", key)
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
 
-	return err
+	return rp.client.Del(key).Err()
 }
 
 // MSet 同时设置一个或多个key-value对
@@ -569,10 +606,13 @@ func (rp *RedisPool) MSet(mList map[string]interface{}, expire int32, encode ...
 			}
 		}
 
+		if rp.prefix != "" {
+			key = rp.prefix + key
+		}
 		v = append(v, key, data)
 	}
 
-	_, err := rp.do("MSET", v...)
+	err := rp.client.MSet(v...).Err()
 	if err != nil {
 		return err
 	}
@@ -580,10 +620,10 @@ func (rp *RedisPool) MSet(mList map[string]interface{}, expire int32, encode ...
 	// 设置失效时间
 	if expire > 0 {
 		for key := range mList {
-			_, err = rp.do("EXPIRE", key, expire)
-			if err != nil {
-				rp.do("DEL", key)
+			if rp.prefix != "" {
+				key = rp.prefix + key
 			}
+			rp.client.Expire(key, time.Duration(expire)*time.Second)
 		}
 	}
 
@@ -598,29 +638,32 @@ func (rp *RedisPool) MSet(mList map[string]interface{}, expire int32, encode ...
 //     成功返回查询结果，失败返回错误信息，key不存在时对应的val为nil
 func (rp *RedisPool) MGet(keys ...string) (map[string]interface{}, error) {
 	mList := make(map[string]interface{})
-	var args []interface{}
+	args := []string{}
 	for _, k := range keys {
+		if rp.prefix != "" {
+			k = rp.prefix + k
+		}
 		args = append(args, k)
 	}
 
-	v, err := rp.do("MGET", args...)
+	v, err := rp.client.MGet(args...).Result()
 	if err != nil {
 		return mList, err
 	}
 
 	i := 0
-	for _, val := range v.([]interface{}) {
+	for _, val := range v {
 		if val == nil {
 			// 不存在
 			mList[keys[i]] = nil
 		} else {
 			// 解密判断
-			data, err := cache.Decode(val.([]byte), rp.encodeKey)
+			data, err := cache.Decode([]byte(val.(string)), rp.encodeKey)
 			if err != nil {
 				return mList, err
 			}
 
-			mList[keys[i]] = data
+			mList[keys[i]] = string(data)
 		}
 
 		i++
@@ -635,12 +678,15 @@ func (rp *RedisPool) MGet(keys ...string) (map[string]interface{}, error) {
 //   返回
 //     成功时返回nil，失败返回错误信息
 func (rp *RedisPool) MDel(keys ...string) error {
-	for _, key := range keys {
-		err := rp.Del(key)
-		if err != nil {
-			return err
+	args := make([]string, len(keys))
+	for k, v := range keys {
+		if rp.prefix != "" {
+			v = rp.prefix + v
 		}
+		args[k] = v
 	}
+
+	rp.client.Del(args...)
 	return nil
 }
 
@@ -653,12 +699,15 @@ func (rp *RedisPool) MDel(keys ...string) error {
 //     递增后的结果，失败返回错误信息
 func (rp *RedisPool) Incr(key string, delta ...uint64) (int64, error) {
 	delta = append(delta, 1)
-	v, err := rp.do("INCRBY", key, delta[0])
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+	v, err := rp.client.IncrBy(key, int64(delta[0])).Result()
 	if err != nil {
 		return 0, err
-	} else {
-		return v.(int64), nil
 	}
+
+	return v, nil
 }
 
 // Decr 缓存里的值自减
@@ -670,12 +719,15 @@ func (rp *RedisPool) Incr(key string, delta ...uint64) (int64, error) {
 //     递减后的结果，失败返回错误信息
 func (rp *RedisPool) Decr(key string, delta ...uint64) (int64, error) {
 	delta = append(delta, 1)
-	v, err := rp.do("INCRBY", key, 0-int64(delta[0]))
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+	v, err := rp.client.DecrBy(key, int64(delta[0])).Result()
 	if err != nil {
 		return 0, err
-	} else {
-		return v.(int64), nil
 	}
+
+	return v, nil
 }
 
 // IsExist 判断key值是否存在
@@ -684,12 +736,19 @@ func (rp *RedisPool) Decr(key string, delta ...uint64) (int64, error) {
 //   返回
 //     存在返回true，不存在返回false，出错时返回错误信息
 func (rp *RedisPool) IsExist(key string) (bool, error) {
-	b, err := redis.Bool(rp.do("EXISTS", key))
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+	n, err := rp.client.Exists(key).Result()
 	if err != nil {
 		return false, err
 	}
 
-	return b, nil
+	if n == 1 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // ClearAll 清空所有数据
@@ -698,18 +757,12 @@ func (rp *RedisPool) IsExist(key string) (bool, error) {
 //   返回
 //     成功时返回nil，失败返回错误信息
 func (rp *RedisPool) ClearAll() error {
-	keys, err := redis.Strings(rp.do("KEYS", "*"))
+	keys, err := rp.client.Keys("*").Result()
 	if err != nil {
 		return err
 	}
 
-	for _, str := range keys {
-		if _, err = rp.do("DEL", str); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return rp.client.Del(keys...).Err()
 }
 
 // Hset 添加哈希表
@@ -727,19 +780,20 @@ func (rp *RedisPool) HSet(key string, field string, val interface{}, expire int3
 		return -1, err
 	}
 
-	v, err := rp.do("HSET", key, field, data)
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+
+	err = rp.client.HSet(key, field, data).Err()
 	if err != nil {
 		return -1, err
 	}
 
 	if expire > 0 {
-		_, err = rp.do("EXPIRE", key, expire)
-		if err != nil {
-			rp.do("DEL", key)
-		}
+		rp.client.Expire(key, time.Duration(expire)*time.Second)
 	}
 
-	return v.(int64), err
+	return 1, err
 }
 
 // HGet 查询哈希表数据
@@ -750,17 +804,20 @@ func (rp *RedisPool) HSet(key string, field string, val interface{}, expire int3
 //   返回
 //     错误信息，是否存在
 func (rp *RedisPool) HGet(key string, field string, val interface{}) (error, bool) {
-	v, err := rp.do("HGET", key, field)
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+
+	v, err := rp.client.HGet(key, field).Result()
 	if err != nil {
+		if err.Error() == NOT_EXIST {
+			return nil, false
+		}
 		return err, false
 	}
 
-	if v == nil {
-		return nil, false
-	}
-
 	// 类型转换
-	err = cache.ByteToInter(v.([]byte), val)
+	err = cache.ByteToInter([]byte(v), val)
 	if err != nil {
 		return err, true
 	}
@@ -775,14 +832,11 @@ func (rp *RedisPool) HGet(key string, field string, val interface{}) (error, boo
 //   返回
 //     成功返回nil，失败返回错误信息
 func (rp *RedisPool) HDel(key string, fields ...string) error {
-	args := make([]interface{}, len(fields)+1)
-	args[0] = key
-	for i := 1; i < len(fields)+1; i++ {
-		args[i] = fields[i-1]
+	if rp.prefix != "" {
+		key = rp.prefix + key
 	}
-	_, err := rp.do("HDEL", args...)
 
-	return err
+	return rp.client.HDel(key, fields...).Err()
 }
 
 // HGetAll 返回哈希表 key 中，所有的域和值，struct、map类型需要业务层调用json.Unmarshal
@@ -805,21 +859,22 @@ func (rp *RedisPool) HDel(key string, fields ...string) error {
 //         fmt.Println(k, data)
 //     }
 func (rp *RedisPool) HGetAll(key string) (map[string]interface{}, error) {
-	res := make(map[string]interface{})
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
 
-	v, err := rp.do("HGETALL", key)
+	res := make(map[string]interface{})
+	val, err := rp.client.HGetAll(key).Result()
 	if err != nil {
+		if err.Error() == NOT_EXIST {
+			return res, nil
+		}
+
 		return nil, err
 	}
-	if v == nil {
-		return res, nil
-	}
 
-	vInter := v.([]interface{})
-	n := len(vInter)
-	for i := 0; i < n; i += 2 {
-		key := string(vInter[i].([]byte))
-		res[key] = vInter[i+1]
+	for k, v := range val {
+		res[k] = v
 	}
 
 	return res, err
@@ -832,26 +887,23 @@ func (rp *RedisPool) HGetAll(key string) (map[string]interface{}, error) {
 //   返回
 //     查询的结果数据和错误码
 func (rp *RedisPool) HMGet(key string, fields ...string) (map[string]interface{}, error) {
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
 	res := make(map[string]interface{})
 
-	args := make([]interface{}, len(fields)+1)
-	args[0] = key
-	for i := 1; i < len(fields)+1; i++ {
-		args[i] = fields[i-1]
-	}
-
-	v, err := rp.do("HMGET", args...)
+	v, err := rp.client.HMGet(key, fields...).Result()
 	if err != nil {
 		return nil, err
 	}
+
 	if v == nil {
 		return res, nil
 	}
 
-	vInter := v.([]interface{})
 	i := 0
 	for _, field := range fields {
-		res[field] = vInter[i]
+		res[field] = v[i]
 		i++
 	}
 
@@ -878,11 +930,17 @@ func (rp *RedisPool) HMGet(key string, fields ...string) (map[string]interface{}
 //         fmt.Println(data)
 //     }
 func (rp *RedisPool) HVals(key string) ([]interface{}, error) {
-	v, err := rp.do("HVALS", key)
+	vals, err := rp.client.HVals(key).Result()
 	if err != nil {
 		return nil, err
 	}
-	return v.([]interface{}), nil
+
+	res := make([]interface{}, len(vals))
+	for k, v := range vals {
+		res[k] = v
+	}
+
+	return res, nil
 }
 
 // ZSet 添加有序集合
@@ -893,23 +951,33 @@ func (rp *RedisPool) HVals(key string) ([]interface{}, error) {
 //   返回
 //     成功添加的数据个数和错误码
 func (rp *RedisPool) ZSet(key string, expire int32, val ...interface{}) (int64, error) {
-	var args []interface{}
-	args = append(args, key)
-	args = append(args, val...)
+	valLen := len(val)
+	if valLen < 2 || valLen%2 != 0 {
+		return -1, errors.New("val param error")
+	}
+	vals := []redis.Z{}
+	for i := 0; i < valLen-1; i += 2 {
+		stZ := redis.Z{
+			Score:  val[i].(float64),
+			Member: val[i+1],
+		}
+		vals = append(vals, stZ)
+	}
 
-	n, err := rp.do("ZADD", args...)
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+
+	n, err := rp.client.ZAdd(key, vals...).Result()
 	if err != nil {
 		return -1, err
 	}
 
 	if expire > 0 {
-		_, err = rp.do("EXPIRE", key, expire)
-		if err != nil {
-			rp.do("DEL", key)
-		}
+		rp.client.Expire(key, time.Duration(expire)*time.Second)
 	}
 
-	return n.(int64), err
+	return n, err
 }
 
 // ZGet 查询有序集合
@@ -923,29 +991,36 @@ func (rp *RedisPool) ZSet(key string, expire int32, val ...interface{}) (int64, 
 //     查询的结果数据和错误码
 func (rp *RedisPool) ZGet(key string, start, stop int, withScores bool, isRev bool) ([]string, error) {
 	var err error
-	var v interface{}
-	var res []string
+	vals := []redis.Z{}
+	res := []string{}
+
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
 
 	if isRev {
+
 		if withScores {
-			v, err = rp.do("ZREVRANGE", key, start, stop, "WITHSCORES")
+			vals, err = rp.client.ZRevRangeWithScores(key, int64(start), int64(stop)).Result()
+			if err != nil {
+				return res, err
+			}
 		} else {
-			v, err = rp.do("ZREVRANGE", key, start, stop)
+			return rp.client.ZRevRange(key, int64(start), int64(stop)).Result()
 		}
 	} else {
 		if withScores {
-			v, err = rp.do("ZRANGE", key, start, stop, "WITHSCORES")
+			vals, err = rp.client.ZRangeWithScores(key, int64(start), int64(stop)).Result()
+			if err != nil {
+				return res, err
+			}
 		} else {
-			v, err = rp.do("ZRANGE", key, start, stop)
+			return rp.client.ZRange(key, int64(start), int64(stop)).Result()
 		}
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	for _, val := range v.([]interface{}) {
-		res = append(res, string(val.([]byte)))
+	for _, val := range vals {
+		res = append(res, fmt.Sprintf("%f", val.Score), fmt.Sprintf("%v", val.Member))
 	}
 
 	return res, err
@@ -959,17 +1034,14 @@ func (rp *RedisPool) ZGet(key string, start, stop int, withScores bool, isRev bo
 //     成功删除的数据个数和错误码
 func (rp *RedisPool) ZDel(key string, field ...string) (int64, error) {
 	var args []interface{}
-	args = append(args, key)
 	for _, f := range field {
 		args = append(args, f)
 	}
 
-	n, err := rp.do("ZREM", args...)
-	if err != nil {
-		return -1, err
+	if rp.prefix != "" {
+		key = rp.prefix + key
 	}
-
-	return n.(int64), err
+	return rp.client.ZRem(key, args...).Result()
 }
 
 // ZCard 返回有序集 key 的基数
@@ -978,71 +1050,30 @@ func (rp *RedisPool) ZDel(key string, field ...string) (int64, error) {
 //   返回
 //     有序集 key 的基数和错误码
 func (rp *RedisPool) ZCard(key string) (int64, error) {
-	n, err := rp.do("ZCARD", key)
-	if err != nil {
-		return -1, err
+	if rp.prefix != "" {
+		key = rp.prefix + key
 	}
-
-	return n.(int64), err
+	return rp.client.ZCard(key).Result()
 }
 
 // Pipeline 执行pipeline命令
+//   实例：
+//     pipe := rc.Pipeline(false)
+//     incr := pipe.Incr("pipeline_counter")
+//     pipe.Expire("pipeline_counter", time.Hour)
+//     _, err := pipe.Exec()
+//     fmt.Println(incr.Val(), err)
 //   参数
-//     cmds: 要执行的命令
+//     isTx: 是否事务模式
 //   返回
 //     成功返回命令执行的结果，失败返回错误信息
-func (rp *RedisPool) Pipeline(cmds ...cache.Cmd) ([]cache.PipeRes) {
-	c := rp.connPool.Get()
-	defer c.Close()
-
-	n := 0
-	for _, cmd := range cmds {
-		err := c.Send(cmd.Name, cmd.Args...)
-		if err != nil {
-			break
-		}
-		n++
+func (rp *RedisPool) Pipeline(isTx bool) cache.Pipeliner {
+	p := cache.Pipeliner{}
+	if isTx {
+		p.Pipe = rp.client.TxPipeline()
+	} else {
+		p.Pipe = rp.client.Pipeline()
 	}
 
-	ret := []cache.PipeRes{}
-	err := c.Flush()
-	if err != nil {
-		return ret
-	}
-
-	for i := 0; i < n; i++ {
-		reply, err := c.Receive()
-		cmdRes := cache.PipeRes{}
-		if err != nil {
-			cmdRes.CmdErr = err
-		} else {
-			cmdRes.CmdRes = reply
-		}
-		ret = append(ret, cmdRes)
-	}
-	return ret
-}
-
-// Exec 执行pipeline事务命令
-//   参数
-//     cmds: 要执行的命令
-//   返回
-//     成功返回命令执行的结果，失败返回错误信息
-func (rp *RedisPool) Exec(cmds ...cache.Cmd) (interface{}, error) {
-	c := rp.connPool.Get()
-	defer c.Close()
-
-	err := c.Send("MULTI")
-	if err != nil {
-		return nil, err
-	}
-
-	for _, cmd := range cmds {
-		err = c.Send(cmd.Name, cmd.Args...)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return c.Do("EXEC")
+	return p
 }

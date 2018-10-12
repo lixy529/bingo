@@ -510,12 +510,6 @@ func (mc *MemcCache) ZCard(key string) (int64, error) {
 }
 
 // Pipeline 执行pipeline命令，memcache不支持pipeline
-func (mc *MemcCache) Pipeline(cmds ...cache.Cmd) ([]cache.PipeRes) {
-	ret := []cache.PipeRes{}
-	return ret
-}
-
-// Exec 执行pipeline事务命令，memcache不支持pipeline
-func (mc *MemcCache) Exec(cmds ...cache.Cmd) (interface{}, error) {
-	return 0, errors.New("MemcCache: Memcache don't support Exec")
+func (mc *MemcCache) Pipeline(isTx bool) cache.Pipeliner {
+	return cache.Pipeliner{}
 }

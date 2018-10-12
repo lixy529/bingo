@@ -1,21 +1,23 @@
 // redis adapter测试
 //   变更历史
 //     2017-02-20  lixiaoya  新建
-package redis
+package redism
 
 import (
-	"github.com/lixy529/bingo/cache"
 	"fmt"
 	"testing"
 	"encoding/json"
+	"time"
 )
 
-func TestRedisCache(t *testing.T) {
+var gConfig = `{"mAddr":"10.110.92.205:6379","mDbNum":"1","mAuth":"123456","sAddr":"10.110.92.205:6379","sDbNum":"1","sAuth":"123456","dialTimeout":"5","readTimeout":"1","writeTimeout":"1","poolSize":"100","minIdleConns":"10","maxConnAge":"3600","poolTimeout":"1","idleTimeout":"300","prefix":"le_"}`
+
+func TestRedismCache(t *testing.T) {
 	var err error
-	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6378","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	adapter := &RedismCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
-		t.Errorf("Redis Init failed. err: %s.", err.Error())
+		t.Errorf("Redism Init failed. err: %s.", err.Error())
 		return
 	}
 
@@ -24,54 +26,54 @@ func TestRedisCache(t *testing.T) {
 	v1 := "HelloWorld"
 	err = adapter.Set(k1, v1, 20)
 	if err != nil {
-		t.Errorf("Redis Set failed. err: %s.", err.Error())
+		t.Errorf("Redism Set failed. err: %s.", err.Error())
 		return
 	}
 
 	var v11 string
 	err, exist := adapter.Get(k1, &v11)
 	if err != nil {
-		t.Errorf("Redis Get failed. err: %s.", err.Error())
+		t.Errorf("Redism Get failed. err: %s.", err.Error())
 		return
 	} else if !exist {
-		t.Errorf("Memc Get failed. %s is not exist.", k1)
+		t.Errorf("Redism Get failed. %s is not exist.", k1)
 		return
 	} else if v11 != v1 {
-		t.Errorf("Redis Get failed. Got %s, expected %s.", v11, v1)
+		t.Errorf("Redism Get failed. Got %s, expected %s.", v11, v1)
 		return
 	}
 
 	isExist, err := adapter.IsExist(k1)
 	if err != nil {
-		t.Errorf("Redis Get IsExist. err: %s.", err.Error())
+		t.Errorf("Redism Get IsExist. err: %s.", err.Error())
 		return
 	} else if !isExist {
-		t.Error("Redis Get failed. Got false, expected true.")
+		t.Error("Redism Get failed. Got false, expected true.")
 		return
 	}
 
 	err = adapter.Del(k1)
 	if err != nil {
-		t.Errorf("Redis Delete failed. err: %s.", err.Error())
+		t.Errorf("Redism Delete failed. err: %s.", err.Error())
 		return
 	}
 
 	isExist, err = adapter.IsExist(k1)
 	if err != nil {
-		t.Errorf("Redis Get IsExist. err: %s.", err.Error())
+		t.Errorf("Redism Get IsExist. err: %s.", err.Error())
 		return
 	} else if isExist {
-		t.Error("Redis Get failed. Got true, expected false.")
+		t.Error("Redism Get failed. Got true, expected false.")
 		return
 	}
 
 	v11 = ""
 	err, _ = adapter.Get(k1, &v11)
 	if err != nil {
-		t.Errorf("Redis Get failed. err: %s.", err.Error())
+		t.Errorf("Redism Get failed. err: %s.", err.Error())
 		return
 	} else if v11 != "" {
-		t.Errorf("Redis Get failed. Got %s, expected nil.", v11)
+		t.Errorf("Redism Get failed. Got %s, expected nil.", v11)
 		return
 	}
 
@@ -80,17 +82,17 @@ func TestRedisCache(t *testing.T) {
 	v2 := 100
 	err = adapter.Set(k2, int32(v2), 30)
 	if err != nil {
-		t.Errorf("Redis Set failed. err: %s.", err.Error())
+		t.Errorf("Redism Set failed. err: %s.", err.Error())
 		return
 	}
 
 	var v22 int
 	err, _ = adapter.Get(k2, &v22)
 	if err != nil {
-		t.Errorf("Redis Get failed. err: %s.", err.Error())
+		t.Errorf("Redism Get failed. err: %s.", err.Error())
 		return
 	} else if v22 != v2 {
-		t.Errorf("Redis Get failed. Got %d, expected %d.", v22, v2)
+		t.Errorf("Redism Get failed. Got %d, expected %d.", v22, v2)
 		return
 	}
 
@@ -99,79 +101,60 @@ func TestRedisCache(t *testing.T) {
 	v3 := 100.01
 	err = adapter.Set(k3, v3, 30)
 	if err != nil {
-		t.Errorf("Redis Set failed. err: %s.", err.Error())
+		t.Errorf("Redism Set failed. err: %s.", err.Error())
 		return
 	}
 
 	var v33 float64
 	err, _ = adapter.Get(k3, &v33)
 	if err != nil {
-		t.Errorf("Redis Get failed. err: %s.", err.Error())
+		t.Errorf("Redism Get failed. err: %s.", err.Error())
 		return
 	} else if v33 != v3 {
-		t.Errorf("Redis Get failed. Got %f, expected %f.", v33, v3)
+		t.Errorf("Redism Get failed. Got %f, expected %f.", v33, v3)
 		return
 	}
 
 	////////////////////////Incr、Decr测试////////////////////////////
-	k4 := "k4"
-	v4 := "100"
-	err = adapter.Set(k4, v4, 30)
-	if err != nil {
-		t.Errorf("Redis Set failed. err: %s.", err.Error())
-		return
-	}
-
-	var v44 string
-	err, _ = adapter.Get(k4, &v44)
-	if err != nil {
-		t.Errorf("Redis Get failed. err: %s.", err.Error())
-		return
-	} else if v44 != v4 {
-		t.Errorf("Redis Get failed. Got %s, expected %s.", v44, v4)
-		return
-	}
-
-	////////
 	k5 := "k5"
 	v5 := 100
 	err = adapter.Set(k5, v5, 30)
 	if err != nil {
-		t.Errorf("Redis Set failed. err: %s.", err.Error())
+		t.Errorf("Redism Set failed. err: %s.", err.Error())
 		return
 	}
 
 	var v55 int
 	err, _ = adapter.Get(k5, &v55)
 	if err != nil {
-		t.Errorf("Redis Get failed. err: %s.", err.Error())
+		t.Errorf("Redism Get failed. err: %s.", err.Error())
 		return
 	} else if v55 != v5 {
-		t.Errorf("Redis Get failed. Got %d, expected %d.", v55, v5)
+		t.Errorf("Redism Get failed. Got %d, expected %d.", v55, v5)
 		return
 	}
 
 	newVal5, _ := adapter.Incr(k5)
 	if newVal5 != 101 {
-		t.Errorf("Redis Incr failed. Got %d, expected %d.", newVal5, 101)
+		t.Errorf("Redism Incr failed. Got %d, expected %d.", newVal5, 101)
 		return
 	}
 
 	newVal5, _ = adapter.Decr(k5)
 	if newVal5 != 100 {
-		t.Errorf("Redis Incr failed. Got %d, expected %d.", newVal5, 100)
+		t.Errorf("Redism Incr failed. Got %d, expected %d.", newVal5, 100)
 		return
 	}
 
 	newVal5, _ = adapter.Incr(k5, 10)
 	if newVal5 != 110 {
-		t.Errorf("Redis Incr failed. Got %d, expected %d.", newVal5, 110)
+		t.Errorf("Redism Incr failed. Got %d, expected %d.", newVal5, 110)
 		return
 	}
 
 	newVal5, _ = adapter.Decr(k5, 10)
 	if newVal5 != 100 {
-		t.Errorf("Redis Incr failed. Got %d, expected %d.", newVal5, 100)
+		t.Errorf("Redism Incr failed. Got %d, expected %d.", newVal5, 100)
 		return
 	}
 
@@ -184,17 +167,17 @@ func TestRedisCache(t *testing.T) {
 	r, err := adapter.HSet(k6, f6, v6, 60)
 	fmt.Println(r)
 	if err != nil {
-		t.Errorf("Redis HSet failed. err: %s.", err.Error())
+		t.Errorf("Redism HSet failed. err: %s.", err.Error())
 		return
 	}
 
 	var v66 string
 	err, _ = adapter.HGet(k6, f6, &v66)
 	if err != nil {
-		t.Errorf("Redis HGet failed. err: %s.", err.Error())
+		t.Errorf("Redism HGet failed. err: %s.", err.Error())
 		return
 	} else if v66 != v6 {
-		t.Errorf("Redis HGet failed. Got %s, expected %s.", v66, v6)
+		t.Errorf("Redism HGet failed. Got %s, expected %s.", v66, v6)
 		return
 	}
 
@@ -202,13 +185,13 @@ func TestRedisCache(t *testing.T) {
 	fmt.Println("=== HGetAll Begin ===")
 	v77, err := adapter.HGetAll(k6)
 	if err != nil {
-		t.Errorf("Redis HGetAll failed. err: %s.", err.Error())
+		t.Errorf("Redism HGetAll failed. err: %s.", err.Error())
 		return
 	}
 	for k, v := range v77 {
 		var val string
 		//json.Unmarshal(v.([]byte), &val)
-		val = string(v.([]byte))
+		val = v.(string)
 		fmt.Println(k, val)
 	}
 	fmt.Println("=== HGetAll End ===")
@@ -217,7 +200,7 @@ func TestRedisCache(t *testing.T) {
 	fmt.Println("=== HMGet Begin ===")
 	v99, err := adapter.HMGet(k6, "google", "baidu", "le")
 	if err != nil {
-		t.Errorf("Redis HMGet failed. err: %s.", err.Error())
+		t.Errorf("Redism HMGet failed. err: %s.", err.Error())
 		return
 	}
 	for k, v := range v99 {
@@ -227,7 +210,7 @@ func TestRedisCache(t *testing.T) {
 		}
 		var val string
 		//json.Unmarshal(v.([]byte), &val)
-		val = string(v.([]byte))
+		val = v.(string)
 		fmt.Println(k, val)
 	}
 	fmt.Println("=== HMGet End ===")
@@ -235,7 +218,7 @@ func TestRedisCache(t *testing.T) {
 	// HVals
 	v88, err := adapter.HVals(k6)
 	if err != nil {
-		t.Errorf("Redis HVals failed. err: %s.", err.Error())
+		t.Errorf("Redism HVals failed. err: %s.", err.Error())
 		return
 	}
 	for _, v := range v88 {
@@ -247,25 +230,25 @@ func TestRedisCache(t *testing.T) {
 
 	err = adapter.HDel(k6, f6, "baidu")
 	if err != nil {
-		t.Errorf("Redis HDel failed. err: %s.", err.Error())
+		t.Errorf("Redism HDel failed. err: %s.", err.Error())
 		return
 	}
 
-	////////////////////////ClearAll测试////////////////////////////
+	//////////////////////////ClearAll测试////////////////////////////
 	err = adapter.ClearAll()
 	if err != nil {
-		t.Errorf("Redis ClearAll failed. err: %s.", err.Error())
+		t.Errorf("Redism ClearAll failed. err: %s.", err.Error())
 		return
 	}
 }
 
-// TestRedisMulti
-func TestRedisMulti(t *testing.T) {
+// TestRedismMulti
+func TestRedismMulti(t *testing.T) {
 	var err error
-	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	adapter := &RedismCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
-		t.Errorf("Redis Init failed. err: %s.", err.Error())
+		t.Errorf("Redism Init failed. err: %s.", err.Error())
 		return
 	}
 
@@ -276,32 +259,32 @@ func TestRedisMulti(t *testing.T) {
 	mList["k4"] = "val4444"
 	err = adapter.MSet(mList, 60)
 	if err != nil {
-		t.Errorf("Redis MSet failed. err: %s.", err.Error())
+		t.Errorf("Redism MSet failed. err: %s.", err.Error())
 		return
 	}
 
 	mList2, err := adapter.MGet("k1", "k2", "k3", "k4")
 	if err != nil {
-		t.Errorf("Redis MGet failed. err: %s.", err.Error())
+		t.Errorf("Redism MGet failed. err: %s.", err.Error())
 		return
 	}
 
 	var v1, v2, v3, v4 string
 	if mList2["k1"] != nil {
 		//json.Unmarshal(mList2["k1"].([]byte), &v1)
-		v1 = string(mList2["k1"].([]byte))
+		v1 = mList2["k1"].(string)
 	}
 	if mList2["k2"] != nil {
 		//json.Unmarshal(mList2["k2"].([]byte), &v2)
-		v2 = string(mList2["k2"].([]byte))
+		v2 = mList2["k2"].(string)
 	}
 	if mList2["k3"] != nil {
 		//json.Unmarshal(mList2["k3"].([]byte), &v3)
-		v3 = string(mList2["k3"].([]byte))
+		v3 = mList2["k3"].(string)
 	}
 	if mList2["k4"] != nil {
 		//json.Unmarshal(mList2["k4"].([]byte), &v4)
-		v4 = string(mList2["k4"].([]byte))
+		v4 = mList2["k4"].(string)
 	}
 
 	if v1 != mList["k1"] || v2 != mList["k2"] || v3 != mList["k3"] || v4 != mList["k4"] {
@@ -316,11 +299,11 @@ func TestRedisMulti(t *testing.T) {
 	}
 }
 
-// TestRedisSet 有序集合测试
-func TestRedisSet(t *testing.T) {
+// TestRedismSet 有序集合测试
+func TestRedismSet(t *testing.T) {
 	var err error
-	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	adapter := &RedismCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -354,7 +337,7 @@ func TestRedisSet(t *testing.T) {
 	// 基数
 	n, err = adapter.ZCard(key)
 	if err != nil {
-		t.Errorf("Redis ZCard failed. err: %s.", n)
+		t.Errorf("Redis ZCard failed. err: %d.", n)
 		return
 	}
 	if n != 6 {
@@ -381,7 +364,7 @@ func TestRedisSet(t *testing.T) {
 	// 基数
 	n, err = adapter.ZCard(key)
 	if err != nil {
-		t.Errorf("Redis ZCard failed. err: %s.", n)
+		t.Errorf("Redis ZCard failed. err: %d.", n)
 		return
 	} else if n != 4 {
 		t.Errorf("Redis ZCard failed. Got %d, expected 4.", n)
@@ -397,8 +380,8 @@ type User struct {
 // TestStruct
 func TestStruct(t *testing.T) {
 	var err error
-	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	adapter := &RedismCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -454,10 +437,10 @@ func TestStruct(t *testing.T) {
 }
 
 // TestRedisEncode 加密测试
-func TestRedisEncode(t *testing.T) {
+func TestRedismEncode(t *testing.T) {
 	var err error
-	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	adapter := &RedismCache{}
+	err = adapter.Init(`{"mAddr":"10.110.92.205:6379","mDbNum":"1","mAuth":"123456","sAddr":"10.110.92.205:6379","sDbNum":"1","sAuth":"123456","dialTimeout":"5","readTimeout":"1","writeTimeout":"1","poolSize":"100","minIdleConns":"10","maxConnAge":"3600","poolTimeout":"1","idleTimeout":"300","prefix":"le_","encodeKey":"lxy123"}`)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -505,16 +488,16 @@ func TestRedisEncode(t *testing.T) {
 
 	var v1, v2, v3, v4 string
 	if mList2["k1"] != nil {
-		v1 = string(mList2["k1"].([]byte))
+		v1 = mList2["k1"].(string)
 	}
 	if mList2["k2"] != nil {
-		v2 = string(mList2["k2"].([]byte))
+		v2 = mList2["k2"].(string)
 	}
 	if mList2["k3"] != nil {
-		v3 = string(mList2["k3"].([]byte))
+		v3 = mList2["k3"].(string)
 	}
 	if mList2["k4"] != nil {
-		v4 = string(mList2["k4"].([]byte))
+		v4 = mList2["k4"].(string)
 	}
 
 	if v1 != mList["k1"] || v2 != mList["k2"] || v3 != mList["k3"] || v4 != mList["k4"] {
@@ -538,24 +521,24 @@ func TestRedisEncode(t *testing.T) {
 		t.Errorf("Memc Set failed. err: %s.", err.Error())
 		return
 	} else if sv2 != sv22 {
-		t.Errorf("Memc Get failed. id[%d] name[%s].", sv22, sv2)
+		t.Errorf("Memc Get failed. id[%d] name[%d].", sv22, sv2)
 		return
 	}
 }
 
 ////////// 实现IJson接口测试 /////////////
 type Item struct {
-	uid   int32
-	name  string
+	uid  int32
+	name string
 }
 
-func (this *Item)MarshalJSON() ([]byte, error) {
+func (this *Item) MarshalJSON() ([]byte, error) {
 	fmt.Println("Item MarshalJSON")
 	str := fmt.Sprintf(`{"uid":%d, "name":"%s"}`, this.uid, this.name)
 	return []byte(str), nil
 }
 
-func (this *Item)UnmarshalJSON(data []byte) error {
+func (this *Item) UnmarshalJSON(data []byte) error {
 	fmt.Println("Item UnmarshalJSON")
 
 	val := make(map[string]interface{})
@@ -568,10 +551,10 @@ func (this *Item)UnmarshalJSON(data []byte) error {
 }
 
 // TestRedisIJson 实现IJson接口测试
-func TestRedisIJson(t *testing.T) {
+func TestRedismIJson(t *testing.T) {
 	var err error
-	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180","encodeKey":"abcdefghij123456"}`)
+	adapter := &RedismCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
 		t.Errorf("Redis Init failed. err: %s.", err.Error())
 		return
@@ -579,7 +562,7 @@ func TestRedisIJson(t *testing.T) {
 
 	key := "k1"
 	val1 := Item{
-		uid: 1000,
+		uid:  1000,
 		name: "nick",
 	}
 	// Set
@@ -595,7 +578,7 @@ func TestRedisIJson(t *testing.T) {
 	if err != nil {
 		t.Errorf("Memc Get failed. err: %s.", err.Error())
 		return
-	} else if val1.uid != val2.uid || val1.name != val2.name  {
+	} else if val1.uid != val2.uid || val1.name != val2.name {
 		t.Errorf("Memc Get failed. Got: %d-%s expected: %d-%s.", val2.uid, val2.name, val1.uid, val1.name)
 		return
 	}
@@ -603,15 +586,15 @@ func TestRedisIJson(t *testing.T) {
 	// Mset
 	mList := make(map[string]interface{})
 	mList["k1"] = &Item{
-		uid: 1001,
+		uid:  1001,
 		name: "nick1",
 	}
 	mList["k2"] = &Item{
-		uid: 1002,
+		uid:  1002,
 		name: "nick2",
 	}
 	mList["k3"] = &Item{
-		uid: 1003,
+		uid:  1003,
 		name: "nick3",
 	}
 	err = adapter.MSet(mList, 600)
@@ -623,7 +606,7 @@ func TestRedisIJson(t *testing.T) {
 	// HSet
 	k6 := "addr"
 	_, err = adapter.HSet(k6, "baidu", &Item{
-		uid: 1001,
+		uid:  1001,
 		name: "baidu",
 	}, 60)
 	if err != nil {
@@ -631,7 +614,7 @@ func TestRedisIJson(t *testing.T) {
 		return
 	}
 	_, err = adapter.HSet(k6, "le", &Item{
-		uid: 1002,
+		uid:  1002,
 		name: "leeco",
 	}, 60)
 	if err != nil {
@@ -645,40 +628,46 @@ func TestRedisIJson(t *testing.T) {
 	if err != nil {
 		t.Errorf("Redis HGet failed. err: %s.", err.Error())
 		return
-	} else if v66.uid != 1001 || v66.name != "baidu"  {
+	} else if v66.uid != 1001 || v66.name != "baidu" {
 		t.Errorf("Memc Get failed. Got: %d-%s expected: %d-%s.", v66.uid, v66.name, 1001, "baidu")
 		return
 	}
 }
 
-// TestExec
-func TestExec(t *testing.T) {
+// TestRedismPipeline
+func TestRedismPipeline(t *testing.T) {
 	var err error
-	adapter := &RedisCache{}
-	err = adapter.Init(`{"master":{"conn":"127.0.0.1:6379","dbNum":"0","auth":"le123123"},"slave":{"conn":"10.11.145.15:6379","dbNum":"0","auth":"le123123"},"maxIdle":"3","maxActive":"0","idleTimeOut":"180"}`)
+	adapter := &RedismCache{}
+	err = adapter.Init(gConfig)
 	if err != nil {
-		t.Errorf("Redis Init failed. err: %s.", err.Error())
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
 		return
 	}
 
-	cmd1 := cache.NewCmd("SET", "foo", "bar")
-	cmd2 := cache.NewCmd("GET", "foo")
-	cmd3 := cache.NewCmd("SET", "num", 0)
-	cmd4 := cache.NewCmd("INCR", "num")
-	cmd5 := cache.NewCmd("INCR", "num")
-	res, err := adapter.Exec(cmd1, cmd2, cmd3, cmd4, cmd5)
+	// 非事务模式
+	pipe := adapter.Pipeline(false).Pipe
+	key := "foo"
+	r1 := pipe.Set(key, 100, 10*time.Second)
+	r2 := pipe.Get(key)
+	r3 := pipe.Incr(key)
+	r4 := pipe.Del(key)
+	_, err = pipe.Exec()
 	if err != nil {
-		t.Errorf("Redis Exec failed. err: %s.", err.Error())
+		fmt.Println("Exec err:", err)
 		return
 	}
-	fmt.Println(res)
-	for k, r := range res.([]interface{}) {
-		if v, ok := r.(string); ok {
-			fmt.Println("string", k, v)
-		} else if v, ok := r.([]byte); ok {
-			fmt.Println("byte", k, string(v))
-		} else if v, ok := r.(int64); ok {
-			fmt.Println("int64", k, v)
-		}
+	fmt.Println("r1:", r1.Val(), "r2:", r2.Val(), "r3:", r3.Val(), "r4:", r4.Val())
+
+	// 事务模式
+	pipe = adapter.Pipeline(false).Pipe
+	r1 = pipe.Set(key, 100, 10*time.Second)
+	r2 = pipe.Get(key)
+	r3 = pipe.Incr(key)
+	r4 = pipe.Del(key)
+	_, err = pipe.Exec()
+	if err != nil {
+		fmt.Println("Exec err:", err)
+		return
 	}
+	fmt.Println("r1:", r1.Val(), "r2:", r2.Val(), "r3:", r3.Val(), "r4:", r4.Val())
 }
