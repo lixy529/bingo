@@ -15,9 +15,10 @@ import (
 )
 
 type Response struct {
-	w        http.ResponseWriter
-	Status   int
-	encoding string // 返回要设置的压缩编码
+	w           http.ResponseWriter
+	Status      int
+	encoding    string // 返回要设置的压缩编码
+	contentType string // OutPut时使用的Content-Type，默认为"text/html; charset=utf-8"
 }
 
 func (rsp *Response) reSet(w http.ResponseWriter, encoding string) {
@@ -28,7 +29,7 @@ func (rsp *Response) reSet(w http.ResponseWriter, encoding string) {
 
 // GetResponse 返回http.ResponseWriter
 //   参数
-//
+//     void
 //   返回
 //     返回ResponseWriter
 func (rsp *Response) GetResponse() http.ResponseWriter {
@@ -40,19 +41,38 @@ func (rsp *Response) GetResponse() http.ResponseWriter {
 //     key: Header的key值
 //     val: Header的value值
 //   返回
-//
+//     void
 func (rsp *Response) Header(key, val string) {
 	rsp.w.Header().Set(key, val)
 }
 
+// SetContentType 设置Content-Type
+// 这个函数只用于OutPut函数的设置Content-Type
+// 有的业务给页面输了文本时需要设置Content-Type，如设置成“application/json;charset=utf-8”
+//   参数
+//     key: Header的key值
+//   返回
+//     void
+func (rsp *Response) SetContentType(contentType string) {
+	rsp.contentType = contentType
+}
+
+// OutPut 输出文本数据
+//   参数
+//     content: 数据
+//   返回
+//     错误信息
 func (rsp *Response) OutPut(content []byte) error {
-	rsp.Header("Content-Type", "text/html; charset=utf-8")
+	if rsp.contentType == "" {
+		rsp.contentType = "text/html; charset=utf-8"
+	}
+	rsp.Header("Content-Type", rsp.contentType)
 	var buf = &bytes.Buffer{}
 	b, n, err := Compress(rsp.encoding, buf, content)
 	if err != nil {
 		http.Error(rsp.w, err.Error(), http.StatusInternalServerError) // 500
 		return err
-	} else if  b {
+	} else if b {
 		rsp.Header("Content-Encoding", n)
 	} else {
 		rsp.Header("Content-Length", strconv.Itoa(len(content)))
@@ -85,7 +105,7 @@ func (rsp *Response) Binary(data []byte, contentType string) error {
 //         Secure   bool   设置Secure属性
 //         HttpOnly bool   设置httpOnly属性
 //   返回
-//
+//     void
 func (rsp *Response) SetCookie(name, value string, others ...interface{}) {
 	var b bytes.Buffer
 	value = url.QueryEscape(replaceValue(value))
@@ -106,7 +126,7 @@ func (rsp *Response) SetCookie(name, value string, others ...interface{}) {
 
 		switch {
 		case maxAge > 0:
-			fmt.Fprintf(&b, "; Expires=%s; Max-Age=%d", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(time.RFC1123), maxAge)
+			fmt.Fprintf(&b, "; Expires=%s; Max-Age=%d", time.Now().Add(time.Duration(maxAge) * time.Second).UTC().Format(time.RFC1123), maxAge)
 		case maxAge < 0:
 			fmt.Fprintf(&b, "; Max-Age=0")
 		}

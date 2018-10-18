@@ -34,9 +34,9 @@ type ControllerInterface interface {
 // Controller 所有Controller的基类
 type Controller struct {
 	// 请求与响应信息
-	Req     Request
-	Rsp     Response
-	outBuf  bytes.Buffer // 要输出到页面的数据
+	Req    Request
+	Rsp    Response
+	outBuf bytes.Buffer // 要输出到页面的数据
 
 	// 模板信息
 	tplData  map[string]interface{}
@@ -738,6 +738,17 @@ func (c *Controller) GetClientPort() string {
 //     User-Agent数据
 func (c *Controller) GetUserAgent() string {
 	return c.Req.UserAgent()
+}
+
+// SetContentType 设置Content-Type
+// 这个函数只用于OutPut函数的设置Content-Type
+// 有的业务给页面输了文本时需要设置Content-Type，如设置成“application/json;charset=utf-8”
+//   参数
+//     contentType: Content-Type内容
+//   返回
+//     void
+func (c *Controller) SetContentType(contentType string) {
+	c.Rsp.SetContentType(contentType)
 }
 
 // WriteString 写数据到页面
