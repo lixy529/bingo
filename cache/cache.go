@@ -32,13 +32,15 @@ type Cache interface {
 	IsExist(key string) (bool, error)
 	ClearAll() error
 
-	// 哈希表操作(支持redis)
+	// 哈希表操作(redis支持)
 	HSet(key string, field string, val interface{}, expire int32) (int64, error)
 	HGet(key string, field string, val interface{}) (error, bool)
 	HDel(key string, fields ...string) error
 	HGetAll(key string) (map[string]interface{}, error)
 	HMGet(key string, fields ...string) (map[string]interface{}, error)
 	HVals(key string) ([]interface{}, error)
+	HIncr(key, fields string, delta ...uint64) (int64, error)
+	HDecr(key, fields string, delta ...uint64) (int64, error)
 
 	// 有序集合操作(支持redis)
 	ZSet(key string, expire int32, val ...interface{}) (int64, error)

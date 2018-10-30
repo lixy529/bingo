@@ -489,6 +489,16 @@ func (mc *MemcCache) HVals(key string) ([]interface{}, error) {
 	return nil, errors.New("MemcCache: Memcache don't support HVals")
 }
 
+// HIncr 哈希表的值自增，memcache没有哈希表
+func (mc *MemcCache) HIncr(key, fields string, delta ...uint64) (int64, error) {
+	return 0, errors.New("MemcCache: Memcache don't support HIncr")
+}
+
+// HDecr 哈希表的值自减，memcache没有哈希表
+func (mc *MemcCache) HDecr(key, fields string, delta ...uint64) (int64, error) {
+	return 0, errors.New("MemcCache: Memcache don't support HDecr")
+}
+
 // ZSet 添加有序集合，memcache没有有序集合
 func (mc *MemcCache) ZSet(key string, expire int32, val ...interface{}) (int64, error) {
 	return 0, errors.New("MemcCache: Memcache don't support ZSet")

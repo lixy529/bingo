@@ -546,6 +546,38 @@ func (c *RediscCache) HVals(key string) ([]interface{}, error) {
 	return res, nil
 }
 
+// HIncr 哈希表的值自增
+//   参数
+//     key:    有序集合key值
+//     fields: 给定域的集合
+//     delta:  递增的量，默认为1
+//   返回
+//     递增后的结果、失败返回错误信息
+func (c *RediscCache) HIncr(key, fields string, delta ...uint64) (int64, error) {
+	delta = append(delta, 1)
+	if c.prefix != "" {
+		key = c.prefix + key
+	}
+
+	return c.client.HIncrBy(key, fields, int64(delta[0])).Result()
+}
+
+// HDecr 哈希表的值自减
+//   参数
+//     key:    有序集合key值
+//     fields: 给定域的集合
+//     delta:  递增的量，默认为1
+//   返回
+//     递减后的结果、失败返回错误信息
+func (c *RediscCache) HDecr(key, fields string, delta ...uint64) (int64, error) {
+	delta = append(delta, 1)
+	if c.prefix != "" {
+		key = c.prefix + key
+	}
+
+	return c.client.HIncrBy(key, fields, 0-int64(delta[0])).Result()
+}
+
 // ZSet 添加有序集合
 //   参数
 //     key:    有序集合key值

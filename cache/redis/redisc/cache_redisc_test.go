@@ -234,6 +234,33 @@ func TestRediscCache(t *testing.T) {
 		return
 	}
 
+	///////////////////////HIncr、HDecr测试 //////////////////////
+	k7 := "count"
+	f7 := "aaa"
+	fmt.Println("=== HIncr Begin ===")
+	r7, err := adapter.HIncr(k7, f7, 2)
+	if err != nil {
+		t.Errorf("Redisd HIncr failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println("test HIncr:", k7, f7, r7)
+	fmt.Println("=== HIncr End ===")
+
+	fmt.Println("=== HDecr Begin ===")
+	r7, err = adapter.HDecr(k7, f7, 2)
+	if err != nil {
+		t.Errorf("Redisd HDecr failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println("test HDecr:", k7, f7, r7)
+	fmt.Println("=== HDecr End ===")
+
+	err = adapter.Del(k7)
+	if err != nil {
+		t.Errorf("Redisd HDel failed. err: %s.", err.Error())
+		return
+	}
+
 	////////////////////////ClearAll测试////////////////////////////
 	//err = adapter.ClearAll()
 	//if err != nil {
