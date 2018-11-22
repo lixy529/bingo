@@ -13,6 +13,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"strings"
 )
 
 const (
@@ -20,12 +21,14 @@ const (
 	DefMaxConns    = 0
 	DefMaxIdle     = 100
 	DefIdleTimeout = 3
-	DefConnTimeout = 3
+	DefConnTimeout = 50
+	DefReqTimeout  = 50
 )
 
 // SyslogNgLogs Syslog-Ng日志
 type SyslogNgLogs struct {
-	SockFile    string        `json:"sockfile"`    // sock文件
+	Addr        string        `json:"addr"`        // syslog接收地址，sock文件或者ip:port
+	addrType    string                             // addr类型 tcp、unix
 	LocalFile   string        `json:"localfile"`   // syslog-ng异常时写本地文件
 	MaxConns    int           `json:"maxconns"`    // 最大连接数，默认为0，0不限，如果小于0则不使用连接池
 	MaxIdle     int           `json:"maxidle"`     // 最大空闲连接数，默认为100，0不限
@@ -42,7 +45,7 @@ type SyslogNgLogs struct {
 // 初始化
 //   参数
 //     {
-//     "sockfile":"/var/run/php-syslog-ng.sock",
+//     "addr":"/var/run/php-syslog-ng.sock",
 //     "localfile":"/tmp/gomessages",
 //     "maxconns":20
 //     "maxidle":10
@@ -54,7 +57,7 @@ type SyslogNgLogs struct {
 //   返回
 //     成功返回nil，失败返回错误信息
 func (l *SyslogNgLogs) Init(config string) error {
-	l.SockFile = DefSockFile
+	l.Addr = DefSockFile
 	l.MaxConns = DefMaxConns
 	l.MaxIdle = DefMaxIdle
 	l.IdleTimeout = DefIdleTimeout
@@ -72,22 +75,28 @@ func (l *SyslogNgLogs) Init(config string) error {
 		return err
 	}
 
-	if l.SockFile == "" {
-		l.SockFile = DefSockFile
+	if l.Addr == "" {
+		l.Addr = DefSockFile
 	}
 
-	isFile, err := utils.IsFile(l.SockFile)
-	if err != nil {
-		return err
-	} else if !isFile {
-		return fmt.Errorf("SyslogNgLogs: [%s] is not file.", l.SockFile)
+	// 判断addr是sock文件还是ip:port
+	if strings.Contains(l.Addr, ":") {
+		l.addrType = "tcp"
+	} else {
+		l.addrType = "unix"
+		isFile, err := utils.IsFile(l.Addr)
+		if err != nil {
+			return err
+		} else if !isFile {
+			return fmt.Errorf("SyslogNgLogs: [%s] is not file.", l.Addr)
+		}
 	}
 
 	// 初始化连接池， >=0时才使用连接池
 	if l.MaxConns >= 0 {
-		l.pool = NewSockPool(l.SockFile, l.MaxConns, l.MaxIdle, l.IdleTimeout, l.Wait)
+		l.pool = NewSockPool(l.Addr, l.addrType, l.MaxConns, l.MaxIdle, l.IdleTimeout, l.Wait)
 		if l.pool == nil {
-			return fmt.Errorf("SyslogNgLogs: NewSockPool failed [%s].", l.SockFile)
+			return fmt.Errorf("SyslogNgLogs: NewSockPool failed [%s].", l.Addr)
 		}
 	}
 
@@ -119,15 +128,15 @@ func (l *SyslogNgLogs) WriteMsg(level int, fmtStr string, v ...interface{}) erro
 
 	if l.pool == nil {
 		// 不使用连接池
-		conn, err = net.Dial("unix", l.SockFile)
+		conn, err = net.DialTimeout(l.addrType, l.Addr, DefConnTimeout*time.Millisecond)
 		if err != nil || conn == nil {
 			l.writeLocalFile(msg)
 			return err
 		} else {
-			conn.SetDeadline(time.Now().Add(DefConnTimeout * time.Second))
+			conn.SetDeadline(time.Now().Add(DefReqTimeout * time.Millisecond))
 		}
 		defer conn.Close()
-	} else{
+	} else {
 		// 使用连接池
 		conn, err = l.pool.Get()
 		defer l.pool.Put(conn, forceClose)
@@ -307,7 +316,8 @@ type IdleConn struct {
 
 // SockPool Uninx sock 连接池
 type SockPool struct {
-	sockFile    string
+	addr        string        // syslog接收地址，sock文件或者ip:port
+	addrType    string        // addr类型 tcp、unix
 	maxConns    int           // 最大连接数
 	maxIdle     int           // 最大空闲连接数
 	idleTimeout time.Duration // 最大空闲超时时间
@@ -323,16 +333,18 @@ type SockPool struct {
 
 // NewSockPool 实例化一个连接池
 //   参数
-//     sockFile:    unix sock文件
+//     addr:        syslog接收地址，sock文件或者ip:port
+//     addrType:    addr类型 tcp、unix
 //     maxConns:    最大连接数
 //     maxIdle:     最大空闲连接数
 //     idleTimeout: 最大空闲时间
 //     wait:        没有空闲连接且已大最大连接数时，是否等待
 //   返回
 //
-func NewSockPool(sockFile string, maxConns, maxIdle int, idleTimeout time.Duration, wait bool) *SockPool {
+func NewSockPool(addr, addrType string, maxConns, maxIdle int, idleTimeout time.Duration, wait bool) *SockPool {
 	return &SockPool{
-		sockFile:    sockFile,
+		addr:        addr,
+		addrType:    addrType,
 		maxConns:    maxConns,
 		maxIdle:     maxIdle,
 		idleTimeout: idleTimeout * time.Second,
@@ -393,14 +405,14 @@ func (p *SockPool) Get() (net.Conn, error) {
 		if p.maxConns == 0 || p.curConns < p.maxConns {
 			p.curConns += 1
 			p.mu.Unlock()
-			c, err := net.Dial("unix", p.sockFile)
+			c, err := net.DialTimeout(p.addrType, p.addr, DefConnTimeout*time.Millisecond)
 			if err != nil || c == nil {
 				p.mu.Lock()
 				p.release()
 				p.mu.Unlock()
 				c = nil
 			} else {
-				c.SetDeadline(time.Now().Add(DefConnTimeout * time.Second))
+				c.SetDeadline(time.Now().Add(DefReqTimeout * time.Millisecond))
 			}
 
 			return c, err
