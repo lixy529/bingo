@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	DefSockFile    = "/var/run/php-syslog-ng.sock"
+	DefSockFile    = "/var/run/syslog/syslog-ng.sock"
 	DefMaxConns    = 0
 	DefMaxIdle     = 100
 	DefIdleTimeout = 3
