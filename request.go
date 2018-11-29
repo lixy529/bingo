@@ -35,8 +35,16 @@ func (req *Request) GetRequest() *http.Request {
 //     void
 //   返回
 //     带参数的url，如: /user/index?id=1001&name=lish
-func (res *Request) Uri() string {
-	return res.r.RequestURI
+func (req *Request) Uri() string {
+	if req.r.RequestURI != "" {
+		return req.r.RequestURI
+	}
+
+	if req.r.URL.RawQuery == "" {
+		return req.r.URL.Path
+	}
+
+	return req.r.URL.Path + "?" + req.r.URL.RawQuery
 }
 
 // UrlPath 返回不带参数的url
