@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	OPT_PROXY = iota
+	OPT_PROXY      = iota
 	OPT_HTTPHEADER
 	OPT_SSLCERT
 )
@@ -36,19 +36,27 @@ func Curl(urlAddr, data, method string, timeout time.Duration, params ...map[int
 	if timeout <= 0 {
 		timeout = 5
 	}
+	headers := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
 
 	if strings.ToUpper(method) == "POST" {
 		method = "POST"
+
+		if data != "" && data[0] == '{' { // json: {"a":"1", "b":"2", "c":"3"}
+			headers["Content-Type"] = "application/json; charset=utf-8"
+		}
 	} else {
 		method = "GET"
-	}
 
-	// 设置Content-Type
-	headers := make(map[string]string)
-	if data != "" && data[0] == '{' { // json: {"a":"1", "b":"2", "c":"3"}
-		headers["Content-Type"] = "application/json; charset=utf-8"
-	} else { // http query: a=1&b=2&c=3
-		headers["Content-Type"] = "application/x-www-form-urlencoded"
+		if data != "" {
+			if strings.Contains(urlAddr, "?") {
+				urlAddr = urlAddr + "&" + data
+			} else {
+				urlAddr = urlAddr + "?" + data
+			}
+			data = ""
+		}
 	}
 
 	tpFlag := false
@@ -89,7 +97,7 @@ func Curl(urlAddr, data, method string, timeout time.Duration, params ...map[int
 		// 设置HEADER
 		if v, ok := param[OPT_HTTPHEADER]; ok {
 			if t, ok := v.(map[string]string); ok {
-				for key,val := range t {
+				for key, val := range t {
 					headers[key] = val
 				}
 			}
@@ -148,7 +156,7 @@ func parseTLSConfig(certFile, keyFile, caFile string) (*tls.Config, error) {
 
 	tlsCfg := tls.Config{
 		InsecureSkipVerify: true,
-		Certificates: []tls.Certificate{cert},
+		Certificates:       []tls.Certificate{cert},
 	}
 
 	// load root ca
