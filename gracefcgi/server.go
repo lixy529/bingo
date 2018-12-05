@@ -77,12 +77,16 @@ func (srv *Server) ListenAndServe() error {
 			return err
 		}
 	} else {
-		_, err = os.Stat(srv.addr)
+		tAddr := srv.addr + "_tmp"
+		_, err = os.Stat(tAddr)
 		if err == nil {
-			os.Remove(srv.addr)
+			os.Remove(tAddr)
 		}
-
-		srv.listener, err = net.Listen("unix", srv.addr)
+		srv.listener, err = net.Listen("unix", tAddr)
+		if err != nil {
+			return err
+		}
+		err = os.Rename(tAddr, srv.addr)
 		if err != nil {
 			return err
 		}
