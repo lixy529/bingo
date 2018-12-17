@@ -5,7 +5,6 @@
 package redisd
 
 import (
-	"github.com/lixy529/bingo/utils"
 	"github.com/lixy529/bingo/cache"
 	"github.com/go-redis/redis"
 	json "github.com/json-iterator/go"
@@ -14,6 +13,7 @@ import (
 	"time"
 	"strings"
 	"errors"
+	"math/rand"
 )
 
 const NOT_EXIST = "redis: nil"
@@ -226,7 +226,7 @@ func (c *RedisdCache) getClient() *redis.Client {
 		return c.connClient[0]
 	}
 
-	k := utils.Irand(0, connCnt-1)
+	k := rand.Intn(connCnt)
 	return c.connClient[k]
 }
 

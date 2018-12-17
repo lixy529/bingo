@@ -191,6 +191,23 @@ func (rt *RouterTab) AddAuto(c ControllerInterface, args ...interface{}) {
 	}
 }
 
+// uri 返回带参数的url
+//   参数
+//     void
+//   返回
+//     带参数的url，如: /user/index?id=1001&name=lish
+func (rt *RouterTab) uri(r *http.Request) string {
+	if r.RequestURI != "" {
+		return r.RequestURI
+	}
+
+	if r.URL.RawQuery == "" {
+		return r.URL.Path
+	}
+
+	return r.URL.Path + "?" + r.URL.RawQuery
+}
+
 // ServeHTTP 实现http.Handler接口，匹配路由顺序：固定路由 => 自动路由 => 正则路由
 //   参数
 //     w: ResponseWriter对象
@@ -201,8 +218,8 @@ func (rt *RouterTab) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			stack := utils.Stack()
-			Flogger.Errorf("path[%s] err[%v] stack[%v]", r.URL.Path, err, stack)
-			accessLog(r, http.StatusInternalServerError)
+			Flogger.Errorf("path[%s] err[%v] stack[%v]", rt.uri(r), err, stack)
+			rt.accessLog(r, http.StatusInternalServerError)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError) // 500
 			return
 		}
@@ -212,7 +229,7 @@ func (rt *RouterTab) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		curGoCnt := runtime.NumGoroutine()
 		if curGoCnt > AppCfg.ServerCfg.MaxGoCnt {
 			Flogger.Errorf("curGoCnt[%d] maxGoCnt[%d]", curGoCnt, AppCfg.ServerCfg.MaxGoCnt)
-			accessLog(r, http.StatusBadGateway)
+			rt.accessLog(r, http.StatusBadGateway)
 			http.Error(w, "Internal Server Error", http.StatusBadGateway) // 502
 			return
 		}
@@ -287,7 +304,7 @@ func (rt *RouterTab) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	accessLog(r, http.StatusNotFound)
+	rt.accessLog(r, http.StatusNotFound)
 	if AppCfg.ServerCfg.Url404 != "" {
 		http.Redirect(w, r, AppCfg.ServerCfg.Url404, http.StatusFound)
 	} else {
@@ -301,8 +318,8 @@ RUNNING:
 	objController, ok := vc.Interface().(ControllerInterface)
 	if !ok {
 		// 500
-		Flogger.Errorf("path[%s] err[controller is not ControllerInterface]", r.URL.Path)
-		accessLog(r, http.StatusInternalServerError)
+		Flogger.Errorf("path[%s] err[controller is not ControllerInterface]", rt.uri(r))
+		rt.accessLog(r, http.StatusInternalServerError)
 		if AppCfg.ServerCfg.Url500 != "" {
 			http.Redirect(w, r, AppCfg.ServerCfg.Url500, http.StatusFound)
 		} else {
@@ -332,7 +349,7 @@ RUNNING:
 		defer func() {
 			if err := recover(); err != nil {
 				stack := utils.Stack()
-				Flogger.Errorf("path[%s] err[%v] stack[%v]", r.URL.Path, err, stack)
+				Flogger.Errorf("path[%s] err[%v] stack[%v]", rt.uri(r), err, stack)
 
 				mu.Lock()
 				defer mu.Unlock()
@@ -365,7 +382,7 @@ RUNNING:
 	case <-chanRes:
 		if httpStatus == http.StatusBadGateway {
 			// 502
-			accessLog(r, httpStatus)
+			rt.accessLog(r, httpStatus)
 			if AppCfg.ServerCfg.Url502 != "" {
 				http.Redirect(w, r, AppCfg.ServerCfg.Url502, http.StatusFound)
 			} else {
@@ -373,7 +390,7 @@ RUNNING:
 			}
 		} else if httpStatus == http.StatusInternalServerError {
 			// 500
-			accessLog(r, httpStatus)
+			rt.accessLog(r, httpStatus)
 			if AppCfg.ServerCfg.Url500 != "" {
 				http.Redirect(w, r, AppCfg.ServerCfg.Url500, http.StatusFound)
 			} else {
@@ -559,7 +576,7 @@ func (rt *RouterTab) getParam(path string, cnt int) map[string]string {
 //     httpStatus: http状态码
 //   返回
 //     void
-func accessLog(r *http.Request, httpStatus int) {
+func (rt *RouterTab) accessLog(r *http.Request, httpStatus int) {
 	userAgent := r.Header.Get("User-Agent")
 	proxy1 := r.Header.Get("X-Forwarded-For")
 	proxy2 := ""
@@ -568,9 +585,9 @@ func accessLog(r *http.Request, httpStatus int) {
 	}
 
 	if httpStatus >= 400 {
-		Flogger.Errorf("%s|%s|%s|%d|%s|%s|%s|%s", r.RemoteAddr, r.Method, r.RequestURI, httpStatus, userAgent, r.Host, proxy1, proxy2)
+		Flogger.Errorf("%s|%s|%s|%d|%s|%s|%s|%s", r.RemoteAddr, r.Method, rt.uri(r), httpStatus, userAgent, r.Host, proxy1, proxy2)
 	} else {
-		Flogger.Infof("%s|%s|%s|%d|%s|%s|%s|%s", r.RemoteAddr, r.Method, r.RequestURI, httpStatus, userAgent, r.Host, proxy1, proxy2)
+		Flogger.Infof("%s|%s|%s|%d|%s|%s|%s|%s", r.RemoteAddr, r.Method, rt.uri(r), httpStatus, userAgent, r.Host, proxy1, proxy2)
 	}
 }
 
