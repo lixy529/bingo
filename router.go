@@ -273,7 +273,7 @@ func (rt *RouterTab) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 全路径未匹配到
-	for i := rt.maxPathCnt - 1; i >= rt.minPathCnt; i-- {
+	for i := rt.maxPathCnt; i >= rt.minPathCnt; i-- {
 		if i > curPathCnt {
 			continue;
 		}
