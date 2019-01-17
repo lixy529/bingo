@@ -47,6 +47,9 @@ type Cache interface {
 	ZGet(key string, start, stop int, withScores bool, isRev bool) ([]string, error)
 	ZDel(key string, field ...string) (int64, error)
 	ZCard(key string) (int64, error)
+	ZRemRangeByRank(key string, start, end int64) (int64, error)
+	ZRemRangeByScore(key string, start, end string) (int64, error)
+	ZRemRangeByLex(key string, start, end string) (int64, error)
 
 	// pipeline支持
 	Pipeline(isTx bool) Pipeliner

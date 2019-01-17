@@ -399,6 +399,144 @@ func TestRedisdSet(t *testing.T) {
 	}
 }
 
+// TestZRemRangeByRank 测试ZRemRangeByRank
+func TestZRemRangeByRank(t *testing.T) {
+	var err error
+	adapter := &RedisdCache{}
+	err = adapter.Init(gConfig)
+	if err != nil {
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
+		return
+	}
+
+	key := "salary1"
+	// 添加
+	n, err := adapter.ZSet(key, 60, 2000.0, "jack", 5000.0, "tom", 3500.0, "peter")
+	fmt.Println(n)
+	if err != nil {
+		t.Errorf("Redis ZSet failed. err: %s.", err.Error())
+		return
+	}
+
+	// 查询
+	res, err := adapter.ZGet(key, 0, -1, true, false)
+	if err != nil {
+		t.Errorf("Redis ZGet failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println(res)
+
+	// 删除
+	n, err = adapter.ZRemRangeByRank(key, 0, 1)
+	if err != nil {
+		t.Errorf("Redis ZDel failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println(n)
+
+	// 查询
+	res, err = adapter.ZGet(key, 0, -1, true, false)
+	if err != nil {
+		t.Errorf("Redis ZGet failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println(res)
+}
+
+// TestZRemRangeByScore 测试ZRemRangeByScore
+func TestZRemRangeByScore(t *testing.T) {
+	var err error
+	adapter := &RedisdCache{}
+	err = adapter.Init(gConfig)
+	if err != nil {
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
+		return
+	}
+
+	key := "salary2"
+	// 添加
+	n, err := adapter.ZSet(key, 60, 2000.0, "jack", 5000.0, "tom", 3500.0, "peter")
+	fmt.Println(n)
+	if err != nil {
+		t.Errorf("Redis ZSet failed. err: %s.", err.Error())
+		return
+	}
+
+	// 查询
+	res, err := adapter.ZGet(key, 0, -1, true, false)
+	if err != nil {
+		t.Errorf("Redis ZGet failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println(res)
+
+	// 删除
+	n, err = adapter.ZRemRangeByScore(key, "1500", "3500")
+	if err != nil {
+		t.Errorf("Redis ZDel failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println(n)
+
+	// 查询
+	res, err = adapter.ZGet(key, 0, -1, true, false)
+	if err != nil {
+		t.Errorf("Redis ZGet failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println(res)
+}
+
+// TestTestZRemRangeByLex 测试ZRemRangeByLex
+func TestZRemRangeByLex(t *testing.T) {
+	var err error
+	adapter := &RedisdCache{}
+	err = adapter.Init(gConfig)
+	if err != nil {
+		t.Errorf("Redisd Init failed. err: %s.", err.Error())
+		return
+	}
+
+	key := "salary3"
+	// 添加
+	n, err := adapter.ZSet(key, 60, 0.0, "aaaa", 0.0, "b", 0.0, "c", 0.0, "d", 0.0, "e")
+	fmt.Println(n)
+	if err != nil {
+		t.Errorf("Redis ZSet failed. err: %s.", err.Error())
+		return
+	}
+	n, err = adapter.ZSet(key, 60, 0.0, "foo", 0.0, "zap", 0.0, "zip", 0.0, "ALPHA", 0.0, "alpha")
+	fmt.Println(n)
+	if err != nil {
+		t.Errorf("Redis ZSet failed. err: %s.", err.Error())
+		return
+	}
+
+	// 查询
+	res, err := adapter.ZGet(key, 0, -1, true, false)
+	if err != nil {
+		t.Errorf("Redis ZGet failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println(res)
+
+	// 删除
+	n, err = adapter.ZRemRangeByLex(key, "[alpha", "[omega")
+	if err != nil {
+		t.Errorf("Redis ZDel failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println(n)
+
+	// 查询
+	res, err = adapter.ZGet(key, 0, -1, true, false)
+	if err != nil {
+		t.Errorf("Redis ZGet failed. err: %s.", err.Error())
+		return
+	}
+	fmt.Println(res)
+}
+
 type User struct {
 	Id   int
 	Name string

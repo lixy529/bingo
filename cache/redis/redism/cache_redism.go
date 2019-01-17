@@ -419,6 +419,40 @@ func (rc *RedismCache) ZDel(key string, field ...string) (int64, error) {
 	return rc.master.ZDel(key, field...)
 }
 
+// ZRemRangeByRank 删除指定排名区间内的有序集合数据
+//   参数
+//     key:   有序集合key值
+//     start: 开始值
+//     end:   结束值
+//   返回
+//     成功删除的数据个数和错误码
+func (rc *RedismCache) ZRemRangeByRank(key string, start, end int64) (int64, error) {
+	return rc.master.ZRemRangeByRank(key, start, end)
+}
+
+// ZRemRangeByScore 删除指定分值区间内的有序集合数据
+//   参数
+//     key:   有序集合key值
+//     start: 开始值
+//     end:   结束值
+//   返回
+//     成功删除的数据个数和错误码
+func (rc *RedismCache) ZRemRangeByScore(key string, start, end string) (int64, error) {
+	return rc.master.ZRemRangeByScore(key, start, end)
+}
+
+// ZRemRangeByLex 删除指定变量区间内的有序集合数据
+// 对于一个所有成员的分值都相同的有序集合键 key 来说， 这个命令会移除该集合中， 成员介于 min 和 max 范围内的所有元素。
+//   参数
+//     key:   有序集合key值
+//     start: 开始值
+//     end:   结束值
+//   返回
+//     成功删除的数据个数和错误码
+func (rc *RedismCache) ZRemRangeByLex(key string, start, end string) (int64, error) {
+	return rc.master.ZRemRangeByLex(key, start, end)
+}
+
 // ZCard 返回有序集 key 的基数
 //   参数
 //     key: 有序集合key值
@@ -1096,6 +1130,52 @@ func (rp *RedisPool) ZDel(key string, field ...string) (int64, error) {
 		key = rp.prefix + key
 	}
 	return rp.client.ZRem(key, args...).Result()
+}
+
+// ZRemRangeByRank 删除指定排名区间内的有序集合数据
+//   参数
+//     key:   有序集合key值
+//     start: 开始值
+//     end:   结束值
+//   返回
+//     成功删除的数据个数和错误码
+func (rp *RedisPool) ZRemRangeByRank(key string, start, end int64) (int64, error) {
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+
+	return rp.client.ZRemRangeByRank(key, start, end).Result()
+}
+
+// ZRemRangeByScore 删除指定分值区间内的有序集合数据
+//   参数
+//     key:   有序集合key值
+//     start: 开始值
+//     end:   结束值
+//   返回
+//     成功删除的数据个数和错误码
+func (rp *RedisPool) ZRemRangeByScore(key string, start, end string) (int64, error) {
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+
+	return rp.client.ZRemRangeByScore(key, start, end).Result()
+}
+
+// ZRemRangeByLex 删除指定变量区间内的有序集合数据
+// 对于一个所有成员的分值都相同的有序集合键 key 来说， 这个命令会移除该集合中， 成员介于 min 和 max 范围内的所有元素。
+//   参数
+//     key:   有序集合key值
+//     start: 开始值
+//     end:   结束值
+//   返回
+//     成功删除的数据个数和错误码
+func (rp *RedisPool) ZRemRangeByLex(key string, start, end string) (int64, error) {
+	if rp.prefix != "" {
+		key = rp.prefix + key
+	}
+
+	return rp.client.ZRemRangeByLex(key, start, end).Result()
 }
 
 // ZCard 返回有序集 key 的基数

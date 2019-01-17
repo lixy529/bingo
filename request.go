@@ -358,7 +358,7 @@ func (req *Request) parseGetParam() {
 	req.getParam = req.r.URL.Query()
 }
 
-// parseGetParam 解析GET提交的数据
+// parseGetParam 解析POST提交的数据
 // 等同req.r.PostFormValue("xxx")
 //   参数
 //     void

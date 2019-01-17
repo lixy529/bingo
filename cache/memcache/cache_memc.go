@@ -514,6 +514,21 @@ func (rc *MemcCache) ZDel(key string, field ...string) (int64, error) {
 	return 0, errors.New("MemcCache: Memcache don't support ZDel")
 }
 
+// ZRemRangeByRank 删除有序集合数据，memcache没有有序集合
+func (rc *MemcCache) ZRemRangeByRank(key string, start, end int64) (int64, error) {
+	return 0, errors.New("MemcCache: Memcache don't support ZRemRangeByRank")
+}
+
+// ZRemRangeByScore 删除有序集合数据，memcache没有有序集合
+func (rc *MemcCache) ZRemRangeByScore(key string, start, end string) (int64, error) {
+	return 0, errors.New("MemcCache: Memcache don't support ZRemRangeByScore")
+}
+
+// ZRemRangeByLex 删除有序集合数据，memcache没有有序集合
+func (rc *MemcCache) ZRemRangeByLex(key string, start, end string) (int64, error) {
+	return 0, errors.New("MemcCache: Memcache don't support ZRemRangeByLex")
+}
+
 // ZCard 返回有序集 key 的基数，memcache没有有序集合
 func (mc *MemcCache) ZCard(key string) (int64, error) {
 	return 0, errors.New("MemcCache: Memcache don't support ZCard")
