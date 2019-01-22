@@ -6,7 +6,7 @@ package bingo
 import (
 	"errors"
 	"fmt"
-	"github.com/lixy529/bingo/config"
+	"github.com/lixy529/gotools/config"
 	"os"
 	"path"
 	"strings"
