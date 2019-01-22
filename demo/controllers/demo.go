@@ -12,7 +12,7 @@ import (
 	_ "github.com/lixy529/bingo/cache/redis/redism"
 	_ "github.com/lixy529/bingo/cache/redis/redisd"
 	"github.com/lixy529/bingo/demo/models"
-	"github.com/lixy529/bingo/utils"
+	"github.com/lixy529/gotools/utils"
 	"log"
 	"os"
 	"strconv"

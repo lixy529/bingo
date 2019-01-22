@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/lixy529/bingo/cache"
-	"github.com/lixy529/bingo/utils"
+	"github.com/lixy529/gotools/utils"
 	"strconv"
 	"strings"
 	"time"

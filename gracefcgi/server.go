@@ -6,7 +6,7 @@ package gracefcgi
 
 import (
 	"fmt"
-	"github.com/lixy529/bingo/utils"
+	"github.com/lixy529/gotools/utils"
 	"log"
 	"net"
 	"net/http"

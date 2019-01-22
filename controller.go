@@ -15,7 +15,7 @@ import (
 	"strings"
 	"bytes"
 	"encoding/json"
-	"github.com/lixy529/bingo/utils"
+	"github.com/lixy529/gotools/utils"
 	"html/template"
 	"encoding/xml"
 )
@@ -817,7 +817,7 @@ func (c *Controller) WriteJson(data interface{}, args ...interface{}) {
 	}
 
 	if encode {
-		content = []byte(utils.StrToJSON(content))
+		content = []byte(utils.UnicodeEncode(content))
 	}
 
 	if callback == "" {

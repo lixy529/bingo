@@ -4,7 +4,7 @@
 package logs
 
 import (
-	"github.com/lixy529/bingo/utils"
+	"github.com/lixy529/gotools/utils"
 	"container/list"
 	"encoding/json"
 	"errors"

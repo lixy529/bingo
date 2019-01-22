@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/lixy529/bingo/gracefcgi"
 	"github.com/lixy529/bingo/gracehttp"
-	"github.com/lixy529/bingo/utils"
+	"github.com/lixy529/gotools/utils"
 	"log"
 	"os"
 	"time"

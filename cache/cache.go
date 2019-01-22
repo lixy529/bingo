@@ -7,7 +7,7 @@ import (
 	json "github.com/json-iterator/go"
 	"errors"
 	"fmt"
-	"github.com/lixy529/bingo/utils"
+	"github.com/lixy529/gotools/utils"
 	"github.com/go-redis/redis"
 )
 

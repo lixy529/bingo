@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"github.com/lixy529/bingo/utils"
+	"github.com/lixy529/gotools/utils"
 	"os"
 	"path/filepath"
 	"strings"

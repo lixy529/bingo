@@ -6,7 +6,7 @@ package session
 import (
 	"errors"
 	"fmt"
-	"github.com/lixy529/bingo/utils"
+	"github.com/lixy529/gotools/utils"
 	"net/http"
 	"time"
 )
