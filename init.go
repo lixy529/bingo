@@ -14,7 +14,7 @@ import (
 	"github.com/lixy529/bingo/cache/redis/redisd"
 	"github.com/lixy529/bingo/db"
 	"github.com/lixy529/bingo/lang"
-	"github.com/lixy529/bingo/logs"
+	"github.com/lixy529/gotools/logs"
 	"github.com/lixy529/bingo/session"
 	"github.com/lixy529/gotools/utils"
 	"log"
