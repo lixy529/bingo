@@ -6,7 +6,7 @@ package bingo
 import (
 	"database/sql"
 	"errors"
-	"github.com/lixy529/bingo/cache"
+	"github.com/lixy529/gotools/cache"
 	"github.com/lixy529/bingo/db"
 )
 
