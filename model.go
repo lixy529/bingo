@@ -7,7 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/lixy529/gotools/cache"
-	"github.com/lixy529/bingo/db"
+	"github.com/lixy529/gotools/db"
 )
 
 type Model struct {

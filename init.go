@@ -12,7 +12,7 @@ import (
 	"github.com/lixy529/gotools/cache/redis/redism"
 	"github.com/lixy529/gotools/cache/redis/redisc"
 	"github.com/lixy529/gotools/cache/redis/redisd"
-	"github.com/lixy529/bingo/db"
+	"github.com/lixy529/gotools/db"
 	"github.com/lixy529/bingo/lang"
 	"github.com/lixy529/gotools/logs"
 	"github.com/lixy529/bingo/session"
