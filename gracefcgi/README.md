@@ -1,3 +1,3 @@
 bingo/gracefcgi
 ======
-gracefcgi模块
+gracefcgi module

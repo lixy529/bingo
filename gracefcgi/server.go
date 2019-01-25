@@ -1,7 +1,5 @@
-// FastCgi服务
-// fcgi.go和child.go从golang源码拷贝过来
-//   变更历史
-//     2017-03-14  lixiaoya  新建
+// FastCgi server
+// fcgi.go and child.go copy from source of golang.
 package gracefcgi
 
 import (
@@ -25,7 +23,7 @@ type Server struct {
 	port        int
 	listener    net.Listener
 	handler     http.Handler
-	shutTimeout time.Duration // 关闭超过时间将强制关闭
+	shutTimeout time.Duration // Close timeout will be forced to close
 
 	isGraceful bool
 	endRunning chan bool
@@ -60,11 +58,9 @@ func NewServer(addr string, port int, handler http.Handler, shutTimeout time.Dur
 	}
 }
 
-// ListenAndServe 启动监听和服务
-//   参数
-//     addr: 为空时为标准I/O，当port>0j时为监听的ip地址，否则为sock file
-//   返回
-//     成功返回nil，失败返回错误信息
+// ListenAndServe start listen and services
+// Standard I/O when srv.addr is empty,
+// Listen ip when srv.port > 0, Otherwise, is sock file.
 func (srv *Server) ListenAndServe() error {
 	var err error
 
@@ -91,7 +87,7 @@ func (srv *Server) ListenAndServe() error {
 			return err
 		}
 
-		// 修改文件权限
+		// Modify file permissions
 		err = os.Chmod(srv.addr, 0777)
 		if err != nil {
 			return err
@@ -101,12 +97,8 @@ func (srv *Server) ListenAndServe() error {
 	return srv.Start()
 }
 
-// getListener 获取监听
-// 如果是重启则直接从fd接收监听
-//   参数
-//     addr:    监听地址
-//   返回
-//     成功-监听信息，失败-返回错误信息
+// getListener return listener.
+// Listen from fd if restart.
 func (srv *Server) getListener(addr string) (*net.TCPListener, error) {
 	var ln net.Listener
 	var err error
@@ -128,23 +120,19 @@ func (srv *Server) getListener(addr string) (*net.TCPListener, error) {
 	return ln.(*net.TCPListener), nil
 }
 
-// Serve 启动服务
-//   参数
-//
-//   返回
-//
+// Serve start service.
 func (srv *Server) Start() error {
 	go srv.handleSignals()
 	go srv.Serve(srv.listener, srv.handler)
 
 	<-srv.endRunning
 
-	// 启动一个子进程
+	// Start a sub process.
 	if srv.isRestart {
 		srv.startNewProcess()
 	}
 
-	// 等待业务处理结束
+	// Waiting...
 	chanStop := make(chan bool)
 	go func() {
 		wg.Wait()
@@ -159,11 +147,7 @@ func (srv *Server) Start() error {
 	return nil
 }
 
-// Serve 启动服务
-//   参数
-//
-//   返回
-//
+// Serve start service.
 func (srv *Server) Serve(l net.Listener, handler http.Handler) error {
 	if l == nil {
 		var err error
@@ -187,15 +171,11 @@ func (srv *Server) Serve(l net.Listener, handler http.Handler) error {
 	}
 }
 
-// startNewProcess 启动一个这样的进程
-//   参数
-//
-//   返回
-//     成功-启动一个新进程，失败-返回错误信息，继续使用老进程
+// startNewProcess start a new process.
 func (srv *Server) startNewProcess() error {
 	log.Println("GraceFcgi: Start new process begin...")
 
-	argv0 := os.Args[0] // 执行命令
+	argv0 := os.Args[0]
 	var listenerFd uintptr
 
 	if srv.port > 0 {
@@ -207,7 +187,7 @@ func (srv *Server) startNewProcess() error {
 		listenerFd = f.Fd()
 	}
 
-	// 设置标识优雅重启的环境变量
+	// Setting environment variables, mark restart.
 	environList := []string{}
 	for _, value := range os.Environ() {
 		if value != GRACEFUL_ENVIRON_STRING {
@@ -231,11 +211,7 @@ func (srv *Server) startNewProcess() error {
 	return nil
 }
 
-// handleSignals 捕获信号
-//   参数
-//
-//   返回
-//
+// handleSignals capture signal
 func (srv *Server) handleSignals() {
 	sigCode, sigName := utils.HandleSignals()
 	log.Printf("GraceFcgi: Pid %d received %s.\n", os.Getpid(), sigName)

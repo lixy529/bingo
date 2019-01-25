@@ -1,7 +1,5 @@
-// FastCgi服务
-// fcgi.go和child.go从golang源码拷贝过来
-//   变更历史
-//     2017-03-15  lixiaoya  新建
+// FastCgi server
+// fcgi.go and child.go copy from source of golang.
 package gracefcgi
 
 const (

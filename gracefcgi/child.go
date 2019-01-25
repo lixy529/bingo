@@ -153,7 +153,7 @@ func newChild(rwc io.ReadWriteCloser, handler http.Handler) *child {
 func (c *child) serve() {
 	defer c.conn.Close()
 	defer c.cleanUp()
-	defer wg.Done() // lixy添加
+	defer wg.Done() // add by lixy
 	var rec record
 	for {
 		if err := rec.read(c.conn.rwc); err != nil {

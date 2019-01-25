@@ -1,12 +1,12 @@
-# 目录
+# Directory
 bin/
 pkg/
 log/
 .cache/
 .idea/
 
-# 编译文件
+# Compile file
 *.[oa]
 
-# idea文件
+# Other file
 *.iml
