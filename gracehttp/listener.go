@@ -1,6 +1,4 @@
-// http 监听
-//   变更历史
-//     2017-02-06  lixiaoya  新建
+// Copy from http
 package gracehttp
 
 import (
@@ -8,16 +6,12 @@ import (
 	"time"
 )
 
-// tcpKeepAliveListener 代码从http复制
+// tcpKeepAliveListener
 type webTcpListener struct {
 	*net.TCPListener
 }
 
-// NewWebTcpListener 返回webTcpListener实例
-//   参数
-//     tl: TCP监听
-//   返回
-//     实例化的webTcpListener对象
+// NewWebTcpListener return webTcpListener object.
 func NewWebTcpListener(tl *net.TCPListener) net.Listener {
 	return &webTcpListener{
 		TCPListener: tl,
@@ -25,10 +19,6 @@ func NewWebTcpListener(tl *net.TCPListener) net.Listener {
 }
 
 // Accept
-//   参数
-//
-//   返回
-//     成功时返回链接，失败时返回错误信息
 func (ln *webTcpListener) Accept() (c net.Conn, err error) {
 	tc, err := ln.AcceptTCP()
 	if err != nil {
@@ -39,11 +29,7 @@ func (ln *webTcpListener) Accept() (c net.Conn, err error) {
 	return tc, nil
 }
 
-// Fd 获取listener的fd
-//   参数
-//
-//   返回
-//     成功时返回监听的fd，失败时返回错误信息
+// Fd return listener fd.
 func (ln *webTcpListener) Fd() (uintptr, error) {
 	f, err := ln.File()
 	if err != nil {

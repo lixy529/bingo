@@ -1,6 +1,3 @@
-// http 服务相关
-//   变更历史
-//     2017-02-06  lixiaoya  新建
 package gracehttp
 
 import (
@@ -22,21 +19,14 @@ type Server struct {
 	tlsConfig  *tls.Config
 
 	isGraceful  bool
-	shutTimeout time.Duration // 关闭超过时间将强制关闭
+	shutTimeout time.Duration // Close timeout will be forced to close
 	endRunning  chan bool
-	isRestart   bool // 是否是重启
-	isHttps     bool // 是否https
+	isRestart   bool
+	isHttps     bool
 	err         error
 }
 
-// NewServer 实例化Server
-//   参数
-//     addr:         监听地址
-//     readTimeout:  读超时时间
-//     writeTimeout: 写超时时间
-//     shutTimeout:  关闭监听超时时间
-//   返回
-//     实例化的Server对象
+// NewServer return Server object.
 func NewServer(addr string, handler http.Handler, readTimeout, writeTimeout, shutTimeout time.Duration) *Server {
 	isGraceful := false
 	if os.Getenv(GRACEFUL_ENVIRON_KEY) != "" {
@@ -71,11 +61,7 @@ func NewServer(addr string, handler http.Handler, readTimeout, writeTimeout, shu
 	}
 }
 
-// ListenAndServe 启动http监听服务
-//   参数
-//
-//   返回
-//     成功-启动监听，失败-返回错误信息
+// ListenAndServe start listen and http services
 func (srv *Server) ListenAndServe() error {
 	addr := srv.httpServer.Addr
 	if addr == "" {
@@ -92,12 +78,7 @@ func (srv *Server) ListenAndServe() error {
 	return srv.Serve()
 }
 
-// ListenAndServeTLS 启动https监听服务
-//   参数
-//     certFile: cert证书文件
-//     keyFile:  key证书文件
-//   返回
-//     成功-启动监听，失败-返回错误信息
+// ListenAndServeTLS start listen and https services
 func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	srv.isHttps = true
 	addr := srv.httpServer.Addr
@@ -130,13 +111,9 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	return srv.Serve()
 }
 
-// Server 启动服务
-//   参数
-//
-//   返回
-//     成功-启动监听，失败-返回错误信息
+// Server start service.
 func (srv *Server) Serve() error {
-	go srv.handleSignals() // 捕获信号
+	go srv.handleSignals()
 	go func() {
 		if srv.isHttps {
 			ln := tls.NewListener(srv.listener, srv.tlsConfig)
@@ -148,10 +125,10 @@ func (srv *Server) Serve() error {
 			log.Println(srv.err)
 		}
 		srv.endRunning <- true
-	}() // 启动服务
+	}()
 	<-srv.endRunning
 
-	// 如果是重启，先启动一个新进程，再关闭老程序，否则直接关闭老进程
+	// If it is restarted, start a new process first, then close the old process, otherwise close the old process directly.
 	pid := os.Getpid()
 	if srv.isRestart {
 		err := srv.startNewProcess()
@@ -167,12 +144,8 @@ func (srv *Server) Serve() error {
 	return srv.err
 }
 
-// getListener 获取监听
-// 如果是重启则直接从fd接收监听
-//   参数
-//     addr:    监听地址
-//   返回
-//     成功-监听信息，失败-返回错误信息
+// getListener return listener.
+// If restart, listen from FD.
 func (srv *Server) getListener(addr string) (*net.TCPListener, error) {
 	var ln net.Listener
 	var err error
@@ -194,11 +167,8 @@ func (srv *Server) getListener(addr string) (*net.TCPListener, error) {
 	return ln.(*net.TCPListener), nil
 }
 
-// startNewProcess 启动一个这样的进程
-//   参数
-//
-//   返回
-//     成功-启动一个新进程，失败-返回错误信息，继续使用老进程
+// startNewProcess start a new process.
+// If startup fails, continue using the old process.
 func (srv *Server) startNewProcess() error {
 	log.Println("Start new process begin...")
 
@@ -207,9 +177,9 @@ func (srv *Server) startNewProcess() error {
 		return fmt.Errorf("failed to get socket file descriptor: %v", err)
 	}
 
-	argv0 := os.Args[0] // 执行命令
+	argv0 := os.Args[0]
 
-	// 设置标识优雅重启的环境变量
+	// Setting environment variables, mark restart.
 	environList := []string{}
 	for _, value := range os.Environ() {
 		if value != GRACEFUL_ENVIRON_STRING {
@@ -233,11 +203,7 @@ func (srv *Server) startNewProcess() error {
 	return nil
 }
 
-// handleSignals 捕获信号
-//   参数
-//
-//   返回
-//
+// handleSignals capture signal.
 func (srv *Server) handleSignals() {
 	sigCode, sigName := utils.HandleSignals()
 	log.Printf("GraceHttp: Pid %d received %s.\n", os.Getpid(), sigName)

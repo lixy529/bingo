@@ -211,7 +211,7 @@ func (srv *Server) startNewProcess() error {
 	return nil
 }
 
-// handleSignals capture signal
+// handleSignals capture signal.
 func (srv *Server) handleSignals() {
 	sigCode, sigName := utils.HandleSignals()
 	log.Printf("GraceFcgi: Pid %d received %s.\n", os.Getpid(), sigName)
