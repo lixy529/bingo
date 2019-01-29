@@ -1,6 +1,3 @@
-// 语言包
-//   变更历史
-//     2017-03-20  lixiaoya  新建
 package lang
 
 import (
@@ -15,17 +12,13 @@ import (
 
 var LANG_EXT = ".json"
 
-// Lang 语言包结构体
+// Lang language package struct.
 type Lang struct {
-	langPath string                            // 语言包文件的根目录
-	data     map[string]map[string]interface{} // 语言包文件内容
+	langPath string                            // Root directory of language package files.
+	data     map[string]map[string]interface{} // Language package content.
 }
 
-// NewLang 实例化语言包对象
-//   参数
-//     root: 语言包文件的根目录
-//   返回
-//     成功返回语言包对象，失败返回错误信息
+// NewLang return Lang object.
 func NewLang(root string) (*Lang, error) {
 	l := &Lang{
 		langPath: root,
@@ -40,11 +33,8 @@ func NewLang(root string) (*Lang, error) {
 	return l, err
 }
 
-// loadLang 加载语言包文件，以子目录为key
-//   参数
-//     void
-//   返回
-//     成功返回nil，失败返回错误信息
+// loadLang load language package files.
+// The subdirectory is key, eg:zh-cn,en-us.
 func (l *Lang) loadLang() error {
 	if l.langPath == "" {
 		return errors.New("Lang: Root path is empty")
@@ -57,7 +47,6 @@ func (l *Lang) loadLang() error {
 		return errors.New("Lang: Root path is't directory")
 	}
 
-	// 遍历根目录
 	fis, err := ioutil.ReadDir(l.langPath)
 	if err != nil {
 		return err
@@ -81,11 +70,7 @@ func (l *Lang) loadLang() error {
 	return err
 }
 
-// parseFile 解析语言包文件
-//   参数
-//     fileName: 语言名文件名
-//   返回
-//     成功返回nil，失败返回错误信息
+// parseFile parse language package files.
 func (l *Lang) parseFile(fileName string) error {
 	n := len(fileName)
 	lang := fileName[0:n-5]
@@ -107,12 +92,8 @@ func (l *Lang) parseFile(fileName string) error {
 	return nil
 }
 
-// ReadLang 读取语言包数据
-//   参数
-//     lang: 语言，如zh-cn、en-us
-//     key:  语言包key值
-//   返回
-//     对应语言包数据、key是否存在
+// ReadLang read language package content.
+// Eg: ReadLang("zh-cn", "title")
 func (l *Lang) ReadLang(lang, key string) (interface{}, bool) {
 	r, ok := l.data[lang]
 	if !ok {
@@ -127,12 +108,9 @@ func (l *Lang) ReadLang(lang, key string) (interface{}, bool) {
 	return val, true
 }
 
-// String 读取语言包数据，value为string型使用此函数
-//   参数
-//     lang: 语言，如zh-cn、en-us
-//     key:  语言包key值，如果是取多层的数据，则可以用:拼接每次的key值，如aa:bb:cc,取的是aa下的bb下的cc对应的值
-//   返回
-//     对应语言包数据
+// String read language package content, return a string value.
+// If multi-level data is taken, you can use ":" to merge key values.
+// eg: String("en-us", "aa"), String("en-us", "aa:bb:cc")
 func (l *Lang) String(lang, key string) string {
 	if key == "" {
 		return ""
@@ -182,12 +160,7 @@ func (l *Lang) String(lang, key string) string {
 	return ""
 }
 
-// Map 读取语言包数据，value为map型使用此函数
-//   参数
-//     lang: 语言，如zh-cn、en-us
-//     key:  语言包key值
-//   返回
-//     对应语言包数据
+// Map read language package content, return a map value.
 func (l *Lang) Map(lang, key string) map[string]string {
 	val, exist := l.ReadLang(lang, key)
 	if !exist || val == "" || val == nil {

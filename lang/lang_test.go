@@ -1,13 +1,10 @@
-// 语言包测试
-//   变更历史
-//     2017-03-20  lixiaoya  新建
 package lang
 
 import (
 	"testing"
 )
 
-// TestLang 语言包测试
+// TestLang test language package.
 func TestLang(t *testing.T) {
 	root := "./testdata/"
 	l, err := NewLang(root)
