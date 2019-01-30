@@ -1,8 +1,7 @@
-// Memcache Session，支持Session共享
-// 保存结构体等对象时，需要将结体构体里的成员转成字符串，比如添加ToString函数，
-// 从Session里取出结构体转换的字符串，再转换成结构体，可以有参考demo
-//   变更历史
-//     2017-02-17  lixiaoya  新建
+// Memcache Session
+// When saving objects such as structs, you need to convert the members of the struct into strings,
+// such as adding ToString() functions, Take the string from Session and convert it into a structure.
+// You can refer to demo.
 package memcache
 
 import (
@@ -17,7 +16,7 @@ import (
 
 var cliMemc *memcache.Client
 
-// MemData Session在内存里保存的数据单元
+// MemData session's data unit in memory.
 type MemcData struct {
 	id       string
 	values   map[string]interface{}
@@ -26,21 +25,12 @@ type MemcData struct {
 	isUpd    bool
 }
 
-// Id 返回Session Id
-//   参数
-//
-//   返回
-//     Session Id
+// Id return Session Id.
 func (d *MemcData) Id() string {
 	return d.id
 }
 
-// Set 根据key获取value
-//   参数
-//     key:   Session的Key值
-//     value: Session的Value值
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Set set value by key.
 func (d *MemcData) Set(key string, value interface{}) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -53,11 +43,7 @@ func (d *MemcData) Set(key string, value interface{}) error {
 	return nil
 }
 
-// Get 根据key获取value
-//   参数
-//     key: Session的Key值
-//   返回
-//     Session的Value值
+// Get return value by key.
 func (d *MemcData) Get(key string) interface{} {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -72,11 +58,7 @@ func (d *MemcData) Get(key string) interface{} {
 	return nil
 }
 
-// Delete 删除key
-//   参数
-//     key: Session的Key值
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Delete delete value by key.
 func (d *MemcData) Delete(key string) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -86,11 +68,7 @@ func (d *MemcData) Delete(key string) error {
 	return nil
 }
 
-// Flush 清楚所有的数据
-//   参数
-//
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Flush clear session by Id.
 func (d *MemcData) Flush() error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -100,14 +78,10 @@ func (d *MemcData) Flush() error {
 	return d.Write()
 }
 
-// Write 将数据写到memcache，同时清空内存的数据
-//   参数
-//
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Write write memory data to memcache and clear memory data.
 func (d *MemcData) Write() error {
 	var err error
-	// 将数据写到memcache
+	// write to memcache.
 	if d.isUpd && cliMemc != nil {
 		if len(d.values) == 0 {
 			err = cliMemc.Delete(d.id)
@@ -123,17 +97,13 @@ func (d *MemcData) Write() error {
 		d.isUpd = false
 	}
 
-	// 清空内存的数据
+	// clear memory data.
 	d.values = make(map[string]interface{})
 
 	return err
 }
 
-// Read 从memcache读取数据到内存
-//   参数
-//
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Read read data from storage objectmemcache.
 func (d *MemcData) Read() error {
 	if cliMemc == nil {
 		return errors.New("session: memcache client is nil")
@@ -162,7 +132,7 @@ func (d *MemcData) Read() error {
 	return nil
 }
 
-// MemProvider 继承Provider接口
+// MemProvider inheriting Provider interface.
 type MemcProvider struct {
 	curId     string
 	lock      sync.RWMutex
@@ -170,12 +140,9 @@ type MemcProvider struct {
 	lifeTime  int64
 }
 
-// Init 初始化MemProvider
-//   参数
-//     lifeTime: session超时时间
-//     providerConfig: 配置，memcache服务的Ip和Port，如:127.0.0.1:11211,127.0.0.2:11211，多个服务器用,号分隔
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Init initialize MemProvider.
+// lifeTime: Session timeout.
+// providerConfig: Session config, the IP and Port of Memcache server, such as 127.0.0.1:11211,127.0.0.2:11211.
 func (p *MemcProvider) Init(lifeTime int64, providerConfig string) error {
 	p.curId = ""
 	if lifeTime <= 0 {
@@ -195,13 +162,8 @@ func (p *MemcProvider) Init(lifeTime int64, providerConfig string) error {
 	return nil
 }
 
-// GetSessData 从sessDatas取出Session Id对应的Data
-// 如果存在，则返回对应Data
-// 如果不存在，则生成一个Data，并保存到sessDatas里
-//   参数
-//     id: Session Id
-//   返回
-//     成功时Session适配器对象，失败返回错误信息
+// GetSessData return a SessData by ID.
+// If the ID isn't exist, create a ID and saved in p.sessDatas.
 func (p *MemcProvider) GetSessData(id string) (session.SessData, error) {
 	p.curId = id
 
@@ -223,7 +185,7 @@ func (p *MemcProvider) GetSessData(id string) (session.SessData, error) {
 		return sessData, nil
 	}
 
-	// 不存在，初始化一个
+	// not exist, init.
 	sessData = func() session.SessData {
 		newData := &MemcData{id: id, lifeTime: p.lifeTime, values: make(map[string]interface{}), isUpd: false}
 		p.lock.Lock()
@@ -236,11 +198,7 @@ func (p *MemcProvider) GetSessData(id string) (session.SessData, error) {
 	return sessData, nil
 }
 
-// Destroy 销毁Id对应的session
-//   参数
-//     id: Session Id
-//   返回
-//     成功时nil，失败返回错误信息
+// Destroy destroy SessData by Id.
 func (p *MemcProvider) Destroy(id string) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -252,22 +210,14 @@ func (p *MemcProvider) Destroy(id string) error {
 	return nil
 }
 
-// Gc 清过期session，memcache自己清到期数据
-//   参数
-//
-//   返回
-//
+// Gc clear expired sessions, memcache clears expired data by itself.
 func (p *MemcProvider) Gc() {
 	return
 }
 
 var memcProvider = &MemcProvider{curId: "", sessDatas: make(map[string]MemcData)}
 
-// init 初始化
-//   参数
-//
-//   返回
-//
+// init register a memcache session provider.
 func init() {
 	session.Register("memcache", memcProvider)
 }

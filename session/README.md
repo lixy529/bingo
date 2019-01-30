@@ -1,3 +1,3 @@
 bingo/session
 ======
-session模块
+session module

@@ -1,6 +1,4 @@
-// 内存Session测试
-//   变更历史
-//     2017-02-14  lixiaoya  新建
+// Memory Session test.
 package memory
 
 import (
@@ -8,7 +6,7 @@ import (
 	"time"
 )
 
-// TestMemData 测试MemData
+// TestMemData test MemData.
 func TestMemData(t *testing.T) {
 	data := &MemData{id: "123456", accTime: time.Now()}
 
@@ -63,7 +61,7 @@ func TestMemData(t *testing.T) {
 	}
 }
 
-// TestMemProvider 测试MemProvider
+// TestMemProvider test MemProvider.
 func TestMemProvider(t *testing.T) {
 	memProvider.Init(7200, "")
 	if memProvider.lifeTime != 7200 {
@@ -141,7 +139,7 @@ func TestMemProvider(t *testing.T) {
 		return
 	}
 
-	// 这块需要修改life_time才能测试成功
+	// You need to modify life_time to test successfully.
 	memProvider.Gc()
 	data3, _ := memProvider.GetSessData("abcdef")
 	v2 = data3.Get("k2")

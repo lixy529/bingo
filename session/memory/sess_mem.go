@@ -1,6 +1,4 @@
-// 内存Session
-//   变更历史
-//     2017-02-14  lixiaoya  新建
+// Memory Session.
 package memory
 
 import (
@@ -9,29 +7,20 @@ import (
 	"time"
 )
 
-// MemData Session在内存里保存的数据单元
+// MemData session's data unit in memory.
 type MemData struct {
 	id      string
-	accTime time.Time // 最后一次访问时间
+	accTime time.Time // Last visit time
 	values  map[string]interface{}
 	lock    sync.RWMutex
 }
 
-// Id 返回Session Id
-//   参数
-//
-//   返回
-//     Session Id
+// Id return Session Id.
 func (d *MemData) Id() string {
 	return d.id
 }
 
-// Set 根据key获取value
-//   参数
-//     key:   Session的Key值
-//     value: Session的Value值
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Set set value by key.
 func (d *MemData) Set(key string, value interface{}) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -43,11 +32,7 @@ func (d *MemData) Set(key string, value interface{}) error {
 	return nil
 }
 
-// Get 根据key获取value
-//   参数
-//     key: Session的Key值
-//   返回
-//     Session的Value值
+// Get return value by key.
 func (d *MemData) Get(key string) interface{} {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -62,11 +47,7 @@ func (d *MemData) Get(key string) interface{} {
 	return nil
 }
 
-// Delete 删除key
-//   参数
-//     key: Session的Key值
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Delete delete value by key.
 func (d *MemData) Delete(key string) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -74,11 +55,7 @@ func (d *MemData) Delete(key string) error {
 	return nil
 }
 
-// Flush 清楚所有的数据
-//   参数
-//
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Flush clear session by Id.
 func (d *MemData) Flush() error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -86,25 +63,17 @@ func (d *MemData) Flush() error {
 	return nil
 }
 
-// Write 将数据写到存储对象，内存Session不需要
-//   参数
-//
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Write write memory data to storage object, memory Session is not required.
 func (d *MemData) Write() error {
 	return nil
 }
 
-// Read 从存储对象读取数据到内存，内存Session不需要
-//   参数
-//
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Read read data from storage object, memory Session is not required.
 func (d *MemData) Read() error {
 	return nil
 }
 
-// MemProvider 继承Provider接口
+// MemProvider inheriting Provider interface.
 type MemProvider struct {
 	curId     string
 	lock      sync.RWMutex
@@ -112,12 +81,9 @@ type MemProvider struct {
 	lifeTime  int64
 }
 
-// Init 初始化MemProvider
-//   参数
-//     lifeTime: session超时时间
-//     providerConfig: 配置，内存session不需要此项
-//   返回
-//     成功时返回nil，失败返回错误信息
+// Init initialize MemProvider.
+// lifeTime: Session timeout.
+// providerConfig: Session config, memory session is not required.
 func (p *MemProvider) Init(lifeTime int64, providerConfig string) error {
 	p.curId = ""
 	if lifeTime <= 0 {
@@ -129,13 +95,8 @@ func (p *MemProvider) Init(lifeTime int64, providerConfig string) error {
 	return nil
 }
 
-// GetSessData 从sessDatas取出Session Id对应的Data
-// 如果存在，则返回对应Data
-// 如果不存在，则生成一个Data，并保存到sessDatas里
-//   参数
-//     id: Session Id
-//   返回
-//     成功时Session适配器对象，失败返回错误信息
+// GetSessData return a SessData by ID.
+// If the ID isn't exist, create a ID and saved in p.sessDatas.
 func (p *MemProvider) GetSessData(id string) (session.SessData, error) {
 	p.curId = id
 
@@ -152,7 +113,7 @@ func (p *MemProvider) GetSessData(id string) (session.SessData, error) {
 		return sessData, nil
 	}
 
-	// 不存在，初始化一个
+	// not exist, init.
 	sessData = func() session.SessData {
 		newData := &MemData{id: id, accTime: time.Now(), values: make(map[string]interface{})}
 		p.lock.Lock()
@@ -165,11 +126,7 @@ func (p *MemProvider) GetSessData(id string) (session.SessData, error) {
 	return sessData, nil
 }
 
-// Destroy 销毁Id对应的session
-//   参数
-//     id: Session Id
-//   返回
-//     成功时nil，失败返回错误信息
+// Destroy destroy SessData by Id.
 func (p *MemProvider) Destroy(id string) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -181,11 +138,7 @@ func (p *MemProvider) Destroy(id string) error {
 	return nil
 }
 
-// Gc 清过期session
-//   参数
-//
-//   返回
-//
+// Gc clear expired sessions.
 func (p *MemProvider) Gc() {
 	p.lock.RLock()
 	for key, sessData := range p.sessDatas {
@@ -203,11 +156,7 @@ func (p *MemProvider) Gc() {
 
 var memProvider = &MemProvider{curId: "", sessDatas: make(map[string]MemData)}
 
-// init 初始化
-//   参数
-//
-//   返回
-//
+// init register a memory session provider.
 func init() {
 	session.Register("memory", memProvider)
 }

@@ -1,6 +1,4 @@
-// Memcache Session测试
-//   变更历史
-//     2017-02-20  lixiaoya  新建
+// Memcache Session test
 package memcache
 
 import (
@@ -8,7 +6,7 @@ import (
 	"testing"
 )
 
-// TestMemData 测试MemData
+// TestMemData test MemData.
 func TestMemcData(t *testing.T) {
 	sessId := "123456"
 	data := &MemcData{id: sessId, lifeTime: 3600, isUpd: false}
@@ -84,7 +82,7 @@ func (i *Info) ToObj(str string) {
 	}
 }
 
-// TestMemProvider 测试MemProvider
+// TestMemProvider test MemProvider.
 func TestMemcProvider(t *testing.T) {
 	var lifeTime int64
 	lifeTime = 3600
@@ -149,7 +147,7 @@ func TestMemcProvider(t *testing.T) {
 		return
 	}
 
-	/////////模拟第二服务器//////////
+	/////////Simulate the Second Server//////////
 
 	data2, _ := memcProvider.GetSessData(sessId)
 	id = data2.Id()
@@ -212,7 +210,7 @@ func TestMemcProvider(t *testing.T) {
 		return
 	}
 
-	/////////模拟第三服务器//////////
+	/////////Simulate the third Server//////////
 
 	data3, _ := memcProvider.GetSessData(sessId)
 	id = data3.Id()
