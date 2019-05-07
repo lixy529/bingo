@@ -174,6 +174,16 @@ func (rsp *Response) SetCookie(name, value string, others ...interface{}) {
 	rsp.w.Header().Add("Set-Cookie", b.String())
 }
 
+// Error 输出error http code
+//   参数
+//     errCode: 错误code
+//     errMsg:  错误信息
+//   返回
+//     void
+func (rsp *Response) Error(errCode int, errMsg string) {
+	http.Error(rsp.w, errMsg, errCode)
+}
+
 // replaceName 替换cookie名字里的特殊字符
 //   参数
 //     cookie名字

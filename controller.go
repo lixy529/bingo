@@ -891,6 +891,16 @@ func (c *Controller) Redirect(urlStr string, status ...int) {
 	http.Redirect(c.Rsp.w, c.Req.r, urlStr, code)
 }
 
+// Error 输出error http code
+//   参数
+//     errCode: 错误code
+//     errMsg:  错误信息
+//   返回
+//     void
+func (c *Controller) Error(errCode int, errMsg string) {
+	c.Rsp.Error(errCode, errMsg)
+}
+
 // StartSession 返回SessionData
 //   参数
 //     void
