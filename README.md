@@ -13,7 +13,7 @@ main函数调用bingo.ObjApp.Run()启动服务
 install
 -------
 
-go get https://github.com/lixy529/bingo
+go get https://github.com/lixy529/bingo # gopath方式，gomode不需要
 
 demo
 ------
@@ -25,24 +25,14 @@ demo代码
 
 ### 环境变量配置demo实例：
 
-export PRJROOT=$HOME/goyard
-
-export GOPATH=$PRJROOT
-
-export GOBIN=$PRJROOT/bin
-
-export PATH=$PATH:$GOBIN
-
 export APPROOT=$HOME/goyard/src/demo
 
 export APPCONFIG=app.conf # 如果配置从环境变量读，未配置默认为app.conf
 
 ### 编译
 
-go install demo
-
-会在$PRJROOT/bin下生成demo文件
+go build demo
 
 ### 运行
 
-$PRJROOT/bin/demo
+./demo

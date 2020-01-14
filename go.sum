@@ -1,0 +1,10 @@
+github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b h1:L/QXpzIa3pOvUGt1D1lA5KjYhPBAN/3iWdP7xeFS9F0=
+github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
+github.com/go-redis/redis v6.15.6+incompatible h1:H9evprGPLI8+ci7fxQx6WNZHJSb7be8FqJQRhdQZ5Sg=
+github.com/go-redis/redis v6.15.6+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=
+github.com/go-sql-driver/mysql v1.5.0 h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gGcHOs=
+github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
+github.com/lixy529/gotools v0.0.0-20200114092909-b7a11d49396c h1:C1/vNi5Vs2HzY3oKstexIrWmU/2O6Mn6bLC6Ml+zuFE=
+github.com/lixy529/gotools v0.0.0-20200114092909-b7a11d49396c/go.mod h1:eUrKTi3DNG7aoqCq1F9HLWMcMI9pEDETcpoA4+2GVY0=
+github.com/lixy529/gotools v0.0.1 h1:/8Su90QSyg+pmx2YI13PYizFtzSkdaKg3jSNCEs35No=
+github.com/lixy529/gotools v0.0.1/go.mod h1:eUrKTi3DNG7aoqCq1F9HLWMcMI9pEDETcpoA4+2GVY0=
