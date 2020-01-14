@@ -15,13 +15,13 @@ import (
 
 const (
 	DbDef    = "db"
-	DbPre    = "db_"
+	DbPre    = "db:"
 	CacheDef = "cache"
-	CachePre = "cache_"
+	CachePre = "cache:"
 	MongoDef = "mongo"
-	MongoPre = "mongo_"
+	MongoPre = "mongo:"
 	MqDef    = "mq"
-	MqPre    = "mq_"
+	MqPre    = "mq:"
 )
 
 var (
